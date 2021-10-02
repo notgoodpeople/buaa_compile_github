@@ -14,12 +14,8 @@ int main(){
 		while(sst<strlen(str)){
 			iskey=0;
 			char ch=str[sst];
-			if(ch==' '){
+			if(isspace(ch)){
 				sst++;
-			} 
-			if(ch=='\\'&&str[sst+1]=='t'){
-				sst+=2;
-				continue;
 			} 
 			else if((ch>='a'&&ch<='z')||(ch>='A'&&ch<='Z')||(ch=='_')){
 				token[tst++]=ch;

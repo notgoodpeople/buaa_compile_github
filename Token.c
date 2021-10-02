@@ -17,10 +17,10 @@ int main(){
 			if(ch==' '){
 				sst++;
 			} 
-			else if((ch>='a'&&ch<='z')||(ch>='A'&&ch<='Z')){
+			else if((ch>='a'&&ch<='z')||(ch>='A'&&ch<='Z')||ch=='_'){
 				token[tst++]=ch;
 				ch=str[++sst];
-				while((ch>='0'&&ch<='9')||(ch>='a'&&ch<='z')||(ch>='A'&&ch<='Z')){
+				while((ch>='0'&&ch<='9')||(ch>='a'&&ch<='z')||(ch>='A'&&ch<='Z')||ch=='_'){
 					token[tst++]=ch;
 					ch=str[++sst];
 				}

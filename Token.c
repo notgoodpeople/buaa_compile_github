@@ -17,6 +17,10 @@ int main(){
 			if(ch==' '){
 				sst++;
 			} 
+			if(ch=='\\'&&str[sst+1]=='t'){
+				sst+=2;
+				continue;
+			} 
 			else if((ch>='a'&&ch<='z')||(ch>='A'&&ch<='Z')||(ch=='_')){
 				token[tst++]=ch;
 				ch=str[++sst];

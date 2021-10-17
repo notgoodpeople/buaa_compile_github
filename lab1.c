@@ -46,7 +46,6 @@ int getToken(){
 	int note=0;
 	tst=0;
 	while(fgets(str,250,fpin)!=NULL){
-		printf("%s\n",str);
 		memset(token,0,sizeof(token));
 		int iskey=0;
 		sst=0;
@@ -277,7 +276,6 @@ int Stmt(){
 		fprintf(fpout,"i32 %s",tempNum);
 	}
 	else{
-		printf("%s\n",token);
 		printf("error in Stmt 'Number'");
 		return 106;
 	}

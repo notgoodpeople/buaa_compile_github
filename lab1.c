@@ -192,7 +192,7 @@ int getToken(){
 				printf("Gt\n");sst++;
 			}
 			else{
-				printf("Err\n"); ret 998; 
+				printf("Err\n"); return 998; 
 			}
 			if(sst==strlen(str)){
 				break;

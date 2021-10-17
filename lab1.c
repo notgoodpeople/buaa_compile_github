@@ -14,8 +14,8 @@ int ret=0;
 FILE *fpin;
 FILE *fpout;
 int main(int argc,char *argv[]){
-	fpout = fopen(argv[1],"w+");
-	fpin=fopen(argv[0],"w+");
+	fpout = fopen(argv[2],"w");
+	fpin=fopen(argv[1],"r");
 	getToken();
 	strcpy(token,sym[symst++]);
 	ret = CompUnit();

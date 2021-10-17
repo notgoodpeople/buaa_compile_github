@@ -1,6 +1,7 @@
 #include<stdio.h>
 #include<string.h>
 #include<stdlib.h>
+#include<ctype.h>
 char str[256];
 char token[20];
 int sst=0;  //表示句子读的位置 sentenceStart
@@ -52,7 +53,7 @@ int getToken(){
 			memset(token,0,sizeof(token));
 			iskey=0;
 			char ch=str[sst];
-			if(ch==' '){
+			if(isspace(ch)){
 				sst++;
 			} 
 			else if(ch=='/'&&str[sst+1]=='/'){

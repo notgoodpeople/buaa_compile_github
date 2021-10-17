@@ -3,10 +3,10 @@
 #include<stdlib.h>
 char str[256];
 char token[20];
-int sst=0;  //??????????λ?? sentenceStart
-int tst=0;  //????????λ?? tokenStart
-int symed=0; //????洢????????????λ?? 
-int symst=0; //??? ?洢?????????????? 
+int sst=0;  //表示句子读的位置 sentenceStart
+int tst=0;  //表示词读的位置 tokenStart
+int symed=0; //表示存储符号的词组的最后位置 
+int symst=0; //表示 存储符号的词组的当前读取 
 char *key[7]={"int","main","return","break","continue","return"};
 char *keyOut[7]={"Int","Main","Return","Break","Continue","Return"};
 char sym[1005][20]; 
@@ -19,11 +19,12 @@ int main(int argc,char *argv[]){
 	getToken();
 	strcpy(token,sym[symst++]);
 	ret = CompUnit();
-	return ret;
-}
+	if(ret!=0) return ret;
+	return 0;
+} 
 
-//???????
-void ChangeTen(int n, char str[]){       //??n???????????10??????
+//进制转换
+void ChangeTen(int n, char str[]){       //将n进制数转换成10进制数
     int len=strlen(str),i,sum=0,t=1;
     for(i=len-1; i >= 0; i--){
         if(str[i]>='A'&&str[i]<'G'){     
@@ -39,15 +40,17 @@ void ChangeTen(int n, char str[]){       //??n???????????10??????
     }
     sprintf(sym[symed++],"Number(%d)",sum);
 }
-//??????? 
+//词法分析 
 int getToken(){
 	int note=0;
 	tst=0;
 	while(fgets(str,250,fpin)!=NULL){
+		printf("%s\n",str);
 		memset(token,0,sizeof(token));
 		int iskey=0;
 		sst=0;
 		while(sst<strlen(str)){
+			memset(token,0,sizeof(token));
 			iskey=0;
 			char ch=str[sst];
 			if(ch==' '){
@@ -68,7 +71,7 @@ int getToken(){
 				note=1;
 				sst++;
 			}
-			//Ident???????? 
+			//Ident或者关键字 
 			else if((ch>='a'&&ch<='z')||(ch>='A'&&ch<='Z')){
 				token[tst++]=ch;
 				ch=str[++sst];
@@ -85,7 +88,7 @@ int getToken(){
 					}
 				}
 			}
-			//Number?? 
+			//Number类 
 			else if(ch>='0'&&ch<='9'){
 				if(ch!='0'){
 					token[tst++]=ch;
@@ -99,7 +102,7 @@ int getToken(){
 					ChangeTen(10,token);
 				}
 				else{
-					//16???? 
+					//16进制 
 					if(str[sst+1]=='x'||str[sst+1]=='X'){
 						sst++;
 						ch=str[++sst];
@@ -114,12 +117,12 @@ int getToken(){
 							tst=0;
 							ChangeTen(16,token);
 						}
-						//16????Number???? 
+						//16进制Number出错 
 						else{
 							return 16;
 						} 
 					}
-					//8???? 
+					//8进制 
 					else{
 						if(str[sst+1]>='0'&&str[sst+1]<='9'){
 							ch=str[++sst];
@@ -174,22 +177,22 @@ int getToken(){
 				sst++;
 			}
 			else if(ch=='+'){
-				fprintf(fpout,"Plus\n");sst++;
+				printf("Plus\n");sst++;
 			}
 			else if(ch=='*'){
-				fprintf(fpout,"Mult\n");sst++;
-			}
+				printf("Mult\n");sst++;
+			} 
 			else if(ch=='/'){
-				fprintf(fpout,"Div\n");sst++;
+				printf("Div\n");sst++;
 			}
 			else if(ch=='<'){
-				fprintf(fpout,"Lt\n");sst++;
+				printf("Lt\n");sst++;
 			}
 			else if(ch=='>'){
-				fprintf(fpout,"Gt\n");sst++;
+				printf("Gt\n");sst++;
 			}
 			else{
-				fprintf(fpout,"Err\n");return 0;
+				printf("Err\n");return 0;
 			}
 			if(sst==strlen(str)){
 				break;

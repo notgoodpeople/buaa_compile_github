@@ -19,7 +19,7 @@ int main(int argc,char *argv[]){
 	getToken();
 	strcpy(token,sym[symst++]);
 	ret = CompUnit();
-	return 9;
+	return ret;
 }
 
 //½øÖÆ×ª»»

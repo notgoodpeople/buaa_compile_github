@@ -45,7 +45,6 @@ int getToken(){
 	int note=0;
 	tst=0;
 	while(fgets(str,250,fpin)!=NULL){
-		printf("%s\n",str);
 		memset(token,0,sizeof(token));
 		int iskey=0;
 		sst=0;
@@ -267,7 +266,7 @@ char tempNum[20];
 int Stmt(){
 	if(strcmp(token,"Return")!=0){
 		printf("error in Stmt 'return'");
-		return 105;
+		//return 105;
 	}
 	fprintf(fpout,"    ret ");
 	strcpy(token,sym[symst++]);

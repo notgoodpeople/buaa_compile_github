@@ -267,16 +267,16 @@ char tempNum[20];
 int Stmt(){
 	if(strcmp(token,"Return")!=0){
 		printf("error in Stmt 'return'");
-		//return 105;
+		return 105;
 	}
 	fprintf(fpout,"    ret ");
 	strcpy(token,sym[symst++]);
 	if(token[0]=='N'&&token[1]=='u'&&token[4]=='e'&&token[5]=='r'){
 		sscanf(token,"%*[^(](%[^)]",tempNum);
 		fprintf(fpout,"i32 %s",tempNum);
-		
 	}
 	else{
+		printf("%s\n",token);
 		printf("error in Stmt 'Number'");
 		return 106;
 	}

@@ -9,7 +9,7 @@ int symed=0; //表示存储符号的词组的最后位置
 int symst=0; //表示 存储符号的词组的当前读取 
 char *key[7]={"int","main","return","break","continue","return"};
 char *keyOut[7]={"Int","Main","Return","Break","Continue","Return"};
-char sym[105][20]; 
+char sym[1005][20]; 
 int ret=0;
 FILE *fpin;
 FILE *fpout;
@@ -146,10 +146,10 @@ int getToken(){
 			}
 			else if(ch=='='){
 				if(str[++sst]=='='){
-					printf("Eq\n");sst++;
+					fprintf(fpout,"Eq\n");sst++;
 				}
 				else{
-					printf("Assign\n");sst++;
+					printf(fpout,"Assign\n");sst++;
 					sst--;
 				}
 			}
@@ -174,22 +174,22 @@ int getToken(){
 				sst++;
 			}
 			else if(ch=='+'){
-				printf("Plus\n");sst++;
+				fprintf(fpout,"Plus\n");sst++;
 			}
 			else if(ch=='*'){
-				printf("Mult\n");sst++;
+				fprintf(fpout,"Mult\n");sst++;
 			}
 			else if(ch=='/'){
-				printf("Div\n");sst++;
+				fprintf(fpout,"Div\n");sst++;
 			}
 			else if(ch=='<'){
-				printf("Lt\n");sst++;
+				fprintf(fpout,"Lt\n");sst++;
 			}
 			else if(ch=='>'){
-				printf("Gt\n");sst++;
+				fprintf(fpout,"Gt\n");sst++;
 			}
 			else{
-				printf("Err\n");return 0;
+				fprintf(fpout,"Err\n");return 0;
 			}
 			if(sst==strlen(str)){
 				break;
@@ -232,7 +232,7 @@ int FuncType(){
 		printf("error in FuncType");
 		return 101;
 	}
-	printf("define dso_local i32 ");
+	fprintf(fpout,"define dso_local i32 ");
 	return 0;
 } 
 int Ident(){
@@ -240,7 +240,7 @@ int Ident(){
 		printf("error in Ident");
 		return 102;
 	}
-	printf("@main()");
+	fprintf(fpout,"@main()");
 	return 0;
 }
 int Block(){
@@ -248,7 +248,7 @@ int Block(){
 		printf("error in Block '{'");
 		return 105;
 	}
-	printf("{\n");
+	fprintf(fpout,"{\n");
 	strcpy(token,sym[symst++]);
 	ret = Stmt(); 
 	if(ret!=0) return ret;
@@ -257,7 +257,7 @@ int Block(){
 		printf("error in Block '}'");
 		return 107;
 	}
-	printf("}");
+	fprintf(fpout,"}");
 	return 0;
 }
 char tempNum[20];
@@ -266,11 +266,11 @@ int Stmt(){
 		printf("error in Stmt 'return'");
 		return 105;
 	}
-	printf("    ret ");
+	fprintf(fpout,"    ret ");
 	strcpy(token,sym[symst++]);
 	if(token[0]=='N'&&token[1]=='u'&&token[4]=='e'&&token[5]=='r'){
 		sscanf(token,"%*[^(](%[^)]",tempNum);
-		printf("i32 %s",tempNum);
+		fprintf(fpout,"i32 %s",tempNum);
 		
 	}
 	else{
@@ -282,7 +282,7 @@ int Stmt(){
 		printf("error in Stmt ';'");
 		return 105;
 	}
-	printf("\n");
+	fprintf(fpout,"\n");
 	return 0;
 }
 int getGrammar(){

@@ -107,10 +107,10 @@ int getToken(){
 					if(str[sst+1]=='x'||str[sst+1]=='X'){
 						sst++;
 						ch=str[++sst];
-						if(ch>='0'&&ch<='9'){
+						if((ch>='0'&&ch<='9')||(ch>='A'&&ch<='F')||(ch>='a'&&ch<='f')){
 							token[tst++]=ch;
 							ch=str[++sst];
-							while(ch>='0'&&ch<='9'){
+							while((ch>='0'&&ch<='9')||(ch>='A'&&ch<='F')||(ch>='a'&&ch<='f')){
 								token[tst++]=ch;
 								ch=str[++sst];
 							}
@@ -125,11 +125,11 @@ int getToken(){
 					}
 					//8½øÖÆ 
 					else{
-						if(str[sst+1]>='0'&&str[sst+1]<='9'){
+						if(str[sst+1]>='0'&&str[sst+1]<='8'){
 							ch=str[++sst];
 							token[tst++]=ch;
 							ch=str[++sst];
-							while(ch>='0'&&ch<='9'){
+							while(ch>='0'&&ch<='8'){
 								token[tst++]=ch;
 								ch=str[++sst];
 							}

@@ -17,7 +17,7 @@ int main(int argc,char *argv[]){
 	fpout = fopen(argv[2],"w");
 	fpin=fopen(argv[1],"r");
 	ret = getToken();
-	if(ret!=0) return ret;
+	if(ret==998) return ret;
 	strcpy(token,sym[symst++]);
 	ret = CompUnit();
 	if(ret!=0) return ret;
@@ -192,7 +192,7 @@ int getToken(){
 				printf("Gt\n");sst++;
 			}
 			else{
-				printf("Err\n");
+				printf("Err\n"); ret 998; 
 			}
 			if(sst==strlen(str)){
 				break;

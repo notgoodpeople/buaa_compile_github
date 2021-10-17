@@ -1,4 +1,4 @@
-From gcc:10.2
+From gcc:10
 WORKDIR  /app/
 COPY lab1.c ./
 RUN gcc lab1.c -o lab1

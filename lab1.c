@@ -10,6 +10,18 @@ int symst=0; //表示 存储符号的词组的当前读取
 char *key[7]={"int","main","return","break","continue","return"};
 char *keyOut[7]={"Int","Main","Return","Break","Continue","Return"};
 char sym[105][20]; 
+int ret=0;
+FILE *fpin;
+FILE *fpout;
+int main(int argc,char *argv[]){
+	fpout = fopen(argv[1],"w+");
+	fpin=fopen(argv[0],"w+");
+	getToken();
+	strcpy(token,sym[symst++]);
+	ret = CompUnit();
+	return ret;
+}
+
 //进制转换
 void ChangeTen(int n, char str[]){       //将n进制数转换成10进制数
     int len=strlen(str),i,sum=0,t=1;
@@ -31,7 +43,7 @@ void ChangeTen(int n, char str[]){       //将n进制数转换成10进制数
 int getToken(){
 	int note=0;
 	tst=0;
-	while(gets(str)!=NULL){
+	while(fgets(str,250,fpin)!=NULL){
 		memset(token,0,sizeof(token));
 		int iskey=0;
 		sst=0;
@@ -185,7 +197,6 @@ int getToken(){
 		}
 	}
 } 
-int ret=0;
 int CompUnit(){
 	ret = FuncDef();
 	if(ret!=0) return ret;
@@ -276,10 +287,4 @@ int Stmt(){
 }
 int getGrammar(){
 	
-}
-int main(){
-	getToken();
-	strcpy(token,sym[symst++]);
-	ret = CompUnit();
-	return ret;
 }

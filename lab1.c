@@ -19,8 +19,9 @@ int main(int argc,char *argv[]){
 	getToken();
 	strcpy(token,sym[symst++]);
 	ret = CompUnit();
-	return ret;
-}
+	if(ret!=0) return 1;
+	return 0;
+} 
 
 //进制转换
 void ChangeTen(int n, char str[]){       //将n进制数转换成10进制数
@@ -174,22 +175,22 @@ int getToken(){
 				sst++;
 			}
 			else if(ch=='+'){
-				fprintf(fpout,"Plus\n");sst++;
+				printf("Plus\n");sst++;
 			}
 			else if(ch=='*'){
-				fprintf(fpout,"Mult\n");sst++;
-			}
+				printf("Mult\n");sst++;
+			} 
 			else if(ch=='/'){
-				fprintf(fpout,"Div\n");sst++;
+				printf("Div\n");sst++;
 			}
 			else if(ch=='<'){
-				fprintf(fpout,"Lt\n");sst++;
+				printf("Lt\n");sst++;
 			}
 			else if(ch=='>'){
-				fprintf(fpout,"Gt\n");sst++;
+				printf("Gt\n");sst++;
 			}
 			else{
-				fprintf(fpout,"Err\n");return 0;
+				printf("Err\n");return 0;
 			}
 			if(sst==strlen(str)){
 				break;

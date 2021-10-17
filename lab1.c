@@ -16,10 +16,11 @@ FILE *fpout;
 int main(int argc,char *argv[]){
 	fpout = fopen(argv[2],"w");
 	fpin=fopen(argv[1],"r");
-	getToken();
+	ret = getToken();
+	if(ret!=0) return ret;
 	strcpy(token,sym[symst++]);
 	ret = CompUnit();
-	if(ret!=0) return 1;
+	if(ret!=0) return ret;
 	return 0;
 } 
 
@@ -49,6 +50,7 @@ int getToken(){
 		int iskey=0;
 		sst=0;
 		while(sst<strlen(str)){
+			memset(token,0,sizeof(token));
 			iskey=0;
 			char ch=str[sst];
 			if(ch==' '){
@@ -190,7 +192,7 @@ int getToken(){
 				printf("Gt\n");sst++;
 			}
 			else{
-				printf("Err\n");return 0;
+				printf("Err\n");return 998;
 			}
 			if(sst==strlen(str)){
 				break;

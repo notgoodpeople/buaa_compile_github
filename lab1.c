@@ -192,7 +192,7 @@ int getToken(){
 				printf("Gt\n");sst++;
 			}
 			else{
-				printf("Err\n");return 998;
+				printf("Err\n");
 			}
 			if(sst==strlen(str)){
 				break;
@@ -269,7 +269,7 @@ int Stmt(){
 		printf("error in Stmt 'return'");
 		return 105;
 	}
-	fprintf(fpout,"    ret ");
+	fprintf(fpout,"\tret ");
 	strcpy(token,sym[symst++]);
 	if(token[0]=='N'&&token[1]=='u'&&token[4]=='e'&&token[5]=='r'){
 		sscanf(token,"%*[^(](%[^)]",tempNum);

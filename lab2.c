@@ -306,7 +306,7 @@ int Stmt() {
 	}
 	fprintf(fpout, "    ret ");
 	strcpy(token, sym[symst++]);
-	tempRetNum = Exp();
+	tempRetNum = Exp();            //进入表达式语法的计算与分析 
 	fprintf(fpout, "i32 %d", tempRetNum);
 	if (ret != 0)  return ret;
 	/*
@@ -336,7 +336,7 @@ int Exp() {
 int AddExp() {
 	int RetNum = MulExp();
 	if (ret != 0) return ret;
-	if (strcmp(sym[symst], "Plus") == 0|| strcmp(sym[symst], "Minus") == 0) {
+	if (strcmp(sym[symst], "Plus") == 0|| strcmp(sym[symst], "Minus") == 0) {    //读后面一个词，判断是否正确 
 		strcpy(token, sym[symst++]);
 	}
 	while (strcmp(token, "Plus") == 0 || strcmp(token, "Minus") == 0) {
@@ -350,7 +350,7 @@ int AddExp() {
 			RetNum -= MulExp(); 
 		}
 		if (ret != 0) return ret;
-		if (strcmp(sym[symst], "Plus") == 0|| strcmp(sym[symst], "Minus") == 0) {
+		if (strcmp(sym[symst], "Plus") == 0|| strcmp(sym[symst], "Minus") == 0) {  //读后面一个词，判断是否正确 
 			strcpy(token, sym[symst++]);
 		}
 	}
@@ -359,7 +359,7 @@ int AddExp() {
 int MulExp() {
 	int RetNum = UnaryExp();
 	if (ret != 0) return ret;
-	if (strcmp(sym[symst], "Mult")==0 || strcmp(sym[symst], "Div") == 0 || strcmp(sym[symst], "Surplus") == 0) {
+	if (strcmp(sym[symst], "Mult")==0 || strcmp(sym[symst], "Div") == 0 || strcmp(sym[symst], "Surplus") == 0) {  //读后面一个词，判断是否正确 
 		strcpy(token, sym[symst++]);
 	}
 	while (strcmp(token, "Mult") == 0 || strcmp(token, "Div") == 0 || strcmp(token, "Surplus") == 0) {
@@ -376,19 +376,18 @@ int MulExp() {
 			RetNum %= UnaryExp();
 		}
 		if (ret != 0) return ret;
-		if (strcmp(sym[symst], "Mult")==0 || strcmp(sym[symst], "Div") == 0 || strcmp(sym[symst], "Surplus") == 0) {
+		if (strcmp(sym[symst], "Mult")==0 || strcmp(sym[symst], "Div") == 0 || strcmp(sym[symst], "Surplus") == 0) {  //读后面一个词，判断是否正确 
 			strcpy(token, sym[symst++]);
 		}
 	}
 	return RetNum;
 }
-//施工中： 
 int UnaryExp() {
 	int RetNum;
-	//UnaryOp
+	//UnaryOp() 
 	if (strcmp(token, "Plus") == 0 || strcmp(token, "Minus") == 0) {
 		int PositiveNum=1;
-		if (strcmp(token, "Plus") == 0) {
+		if (strcmp(token, "Plus") == 0) {        //多余一个+-号，则以此来判断Number的正负 
 			PositiveNum=PositiveNum;
 		}
 		else {

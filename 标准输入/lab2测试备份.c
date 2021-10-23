@@ -4,16 +4,15 @@
 #include<ctype.h>
 char str[256];
 char token[20];
-int sst = 0;  //±íê???×ó?áμ????? sentenceStart
-int tst = 0;  //±íê?′ê?áμ????? tokenStart
-int symed = 0; //±íê?′?′￠·?o?μ?′ê×éμ?×?oó???? 
-int symst = 0; //±íê? ′?′￠·?o?μ?′ê×éμ?μ±?°?áè? 
+int sst = 0;  //表示句子读的位置 sentenceStart
+int tst = 0;  //表示词读的位置 tokenStart
+int symed = 0; //表示存储符号的词组的最后位置 
+int symst = 0; //表示 存储符号的词组的当前读取 
 char *key[7] = { "int","main","return","break","continue","return" };
 char *keyOut[7] = { "Int","Main","Return","Break","Continue","Return" };
 char sym[1005][20];
-int ret = 0;//3ìDò3?′íμ?·μ???μ 
-int tempRetNum = 0;//EXP()ê?×ó?Dμ?áùê±·μ???μ 
-int RetNum;//EXP()ê?×ó?Dμ?·μ???μ 
+int ret = 0;//程序出错的返回值 
+int tempRetNum = 0;//EXP()式子中的临时返回值 
 FILE *fpin;
 FILE *fpout;
 int getToken();
@@ -39,13 +38,13 @@ int main(int argc, char *argv[]) {
 	getToken();
 	strcpy(token, sym[symst++]);
 	ret = CompUnit();
-	printf("\n RetNum = %d", RetNum);
+	printf("\n RetNum = %d", tempRetNum);
 	if (ret != 0) return ret;
 	return 0;
 }
 
-//????×a??
-void ChangeTen(int n, char str[]) {       //??n????êy×a??3é10????êy
+//进制转换
+void ChangeTen(int n, char str[]) {       //将n进制数转换成10进制数
 	int len = strlen(str), i, sum = 0, t = 1;
 	for (i = len - 1; i >= 0; i--) {
 		if (str[i] >= 'A'&&str[i] < 'G') {
@@ -61,7 +60,12 @@ void ChangeTen(int n, char str[]) {       //??n????êy×a??3é10????êy
 	}
 	sprintf(sym[symed++], "Number(%d)", sum);
 }
-//′ê·¨·??? 
+//在表达式计算，Exp()类函数时 使用该函数报错
+void error(){
+	ret=120;
+	printf("\nExp() error") ; 
+} 
+//词法分析 
 int getToken() {
 	int note = 0;
 	tst = 0;
@@ -91,7 +95,7 @@ int getToken() {
 				note = 1;
 				sst++;
 			}
-			//Ident?ò??1??ü×? 
+			//Ident或者关键字 
 			else if ((ch >= 'a'&&ch <= 'z') || (ch >= 'A'&&ch <= 'Z')) {
 				token[tst++] = ch;
 				ch = str[++sst];
@@ -108,7 +112,7 @@ int getToken() {
 					}
 				}
 			}
-			//Numberàà 
+			//Number类 
 			else if (ch >= '0'&&ch <= '9') {
 				if (ch != '0') {
 					token[tst++] = ch;
@@ -122,7 +126,7 @@ int getToken() {
 					ChangeTen(10, token);
 				}
 				else {
-					//16???? 
+					//16进制 
 					if (str[sst + 1] == 'x' || str[sst + 1] == 'X') {
 						sst++;
 						ch = str[++sst];
@@ -137,12 +141,12 @@ int getToken() {
 							tst = 0;
 							ChangeTen(16, token);
 						}
-						//16????Number3?′í 
+						//16进制Number出错 
 						else {
 							return 16;
 						}
 					}
-					//8???? 
+					//8进制 
 					else {
 						if (str[sst + 1] >= '0'&&str[sst + 1] <= '8') {
 							ch = str[++sst];
@@ -302,7 +306,8 @@ int Stmt() {
 	}
 	fprintf(fpout, "    ret ");
 	strcpy(token, sym[symst++]);
-	ret = Exp();
+	tempRetNum = Exp();
+	fprintf(fpout, "i32 %d", tempRetNum);
 	if (ret != 0)  return ret;
 	/*
 	if(token[0]=='N'&&token[1]=='u'&&token[4]=='e'&&token[5]=='r'){
@@ -324,81 +329,101 @@ int Stmt() {
 	return 0;
 }
 int Exp() {
-	ret = AddExp();
+	int RetNum = AddExp();
 	if (ret != 0) return ret;
-	return 0;
+	return RetNum;
 }
 int AddExp() {
-	ret = MulExp();
+	int RetNum = MulExp();
 	if (ret != 0) return ret;
-	if (strcmp(sym[symst], "Plus") == 0 || strcmp(sym[symst], "Minus") == 0) {
+	if (strcmp(sym[symst], "Plus") == 0|| strcmp(sym[symst], "Minus") == 0) {
 		strcpy(token, sym[symst++]);
 	}
 	while (strcmp(token, "Plus") == 0 || strcmp(token, "Minus") == 0) {
+		char temptoken[20];
+		strcpy(temptoken, token);
 		strcpy(token, sym[symst++]);
-		ret = MulExp();
+		if(strcmp(temptoken, "Plus") == 0){
+			RetNum += MulExp();
+		}
+		else{
+			RetNum -= MulExp(); 
+		}
 		if (ret != 0) return ret;
 	}
-	return 0;
+	return RetNum;
 }
 int MulExp() {
-	ret = UnaryExp();
+	int RetNum = UnaryExp();
 	if (ret != 0) return ret;
-	if (strcmp(sym[symst], "Mult") == 0 || strcmp(sym[symst], "Div") == 0 || strcmp(sym[symst], "Surplus") == 0) {
+	if (strcmp(sym[symst], "Mult")==0 || strcmp(sym[symst], "Div") == 0 || strcmp(sym[symst], "Surplus") == 0) {
 		strcpy(token, sym[symst++]);
 	}
 	while (strcmp(token, "Mult") == 0 || strcmp(token, "Div") == 0 || strcmp(token, "Surplus") == 0) {
+		char temptoken[20];
+		strcpy(temptoken, token);
 		strcpy(token, sym[symst++]);
-		ret = UnaryExp();
+		if(strcmp(temptoken, "Mult") == 0){
+			RetNum *= UnaryExp();
+		}
+		else if(strcmp(temptoken, "Div") == 0){
+			RetNum /= UnaryExp(); 
+		}
+		else{
+			RetNum %= UnaryExp();
+		}
 		if (ret != 0) return ret;
 	}
-	return 0;
+	return RetNum;
 }
-//ê?1¤?D￡o 
+//施工中： 
 int UnaryExp() {
+	int RetNum;
 	//UnaryOp
 	if (strcmp(token, "Plus") == 0 || strcmp(token, "Minus") == 0) {
+		int PositiveNum=1;
 		if (strcmp(token, "Plus") == 0) {
-			RetNum += tempRetNum;
+			PositiveNum=PositiveNum;
 		}
 		else {
-			RetNum -= tempRetNum;
+			PositiveNum=-PositiveNum;
 		}
 		strcpy(token, sym[symst++]);
-		ret = UnaryExp();
+		RetNum = UnaryExp();
+		RetNum = RetNum*PositiveNum;
 		if (ret != 0) return ret;
 	}
 	else {
-		ret = PrimaryExp();
+		RetNum = PrimaryExp();
 		if (ret != 0) {
 			return ret;
 		}
 	}
-	return 0;
+	return RetNum;
 }
 int PrimaryExp() {
+	int RetNum;
 	if (strcmp(token, "LPar") == 0) {
 		strcpy(token, sym[symst++]);
-		ret = Exp();
+		RetNum = Exp();
 		if (ret != 0) return ret;
 		strcpy(token, sym[symst++]);
 		if (strcmp(token, "RPar") != 0) {
-			ret = 109;
 			printf("error in PrimaryExp() RPar");
-			return 112;
+			error();
 		}
-		return 0;
+		return RetNum;
 	}
 	else if (token[0] == 'N'&&token[1] == 'u'&&token[4] == 'e'&&token[5] == 'r') {
 		//Number()
+		int retPriNum;
 		sscanf(token, "%*[^(](%[^)]", tempNum);
-		sscanf(tempNum, "%d", &tempRetNum);
-		fprintf(fpout, "i32 %s", tempNum);
-		return 0;
+		sscanf(tempNum, "%d", &retPriNum);
+		return retPriNum;
 	}
 	else {
 		printf("error in PrimaryExp()");
-		return 112;
+		error();
 	}
 }
 int getGrammar() {

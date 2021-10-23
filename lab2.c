@@ -351,6 +351,9 @@ int AddExp() {
 			RetNum -= MulExp(); 
 		}
 		if (ret != 0) return ret;
+		if (strcmp(sym[symst], "Plus") == 0|| strcmp(sym[symst], "Minus") == 0) {
+			strcpy(token, sym[symst++]);
+		}
 	}
 	return RetNum;
 }
@@ -374,6 +377,9 @@ int MulExp() {
 			RetNum %= UnaryExp();
 		}
 		if (ret != 0) return ret;
+		if (strcmp(sym[symst], "Mult")==0 || strcmp(sym[symst], "Div") == 0 || strcmp(sym[symst], "Surplus") == 0) {
+			strcpy(token, sym[symst++]);
+		}
 	}
 	return RetNum;
 }

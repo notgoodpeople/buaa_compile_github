@@ -1218,11 +1218,11 @@ void OperationUnaryOp()
 	{
 		if (num.type == 1)
 		{
-			fprintf(fpout, "    %%%d = sub i32 %d, 0\n", ++VarMapSt, num.value);
+			fprintf(fpout, "    %%%d = sub i32 0, %d\n", ++VarMapSt, num.value);
 		}
 		else
 		{
-			fprintf(fpout, "    %%%d = sub i32 %%%d, 0\n", ++VarMapSt, num.value);
+			fprintf(fpout, "    %%%d = sub i32 0, %%%d\n", ++VarMapSt, num.value);
 		}
 		num.type = 3;
 		num.value = VarMapSt;

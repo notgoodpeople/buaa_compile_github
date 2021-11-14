@@ -517,7 +517,7 @@ int ConstDef()
 		}
 		else if (tempExpStack->type == 3)
 		{
-			fprintf(fpout, "    store i32 %d, i32* %%%d\n", tempExpStack->value, tempVarItem->registerNum);
+			fprintf(fpout, "    store i32 %%%d, i32* %%%d\n", tempExpStack->value, tempVarItem->registerNum);
 		}
 		else
 		{
@@ -612,7 +612,7 @@ int VarDef()
 		}
 		else if (tempExpStack->type == 3)
 		{
-			fprintf(fpout, "    store i32 %d, i32* %%%d\n", tempExpStack->value, tempVarItem->registerNum);
+			fprintf(fpout, "    store i32 %%%d, i32* %%%d\n", tempExpStack->value, tempVarItem->registerNum);
 		}
 		else
 		{

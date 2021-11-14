@@ -769,11 +769,11 @@ int Stmt()
 		strcpy(token, sym[symst++]);
 		if (tempExpStack->type == 1)
 		{
-			fprintf(fpout, "    store i32 %d i32* %%%d", tempExpStack->value, retRegister);
+			fprintf(fpout, "    store i32 %d, i32* %%%d", tempExpStack->value, retRegister);
 		}
 		else if (tempExpStack->type == 3)
 		{
-			fprintf(fpout, "    store i32 %%%d i32* %%%d", tempExpStack->value, retRegister);
+			fprintf(fpout, "    store i32 %%%d, i32* %%%d", tempExpStack->value, retRegister);
 		}
 		else
 		{

@@ -2,15 +2,15 @@
 #include<string.h>
 #include<stdlib.h>
 #include<ctype.h>
-char str[256];
-char token[20];
+char str[512];
+char token[200];
 int sst = 0;  //表示句子读的位置 sentenceStart
 int tst = 0;  //表示词读的位置 tokenStart
 int symed = 0; //表示存储符号的词组的最后位置 
 int symst = 0; //表示 存储符号的词组的当前读取 
 char *key[7] = { "int","main","return","break","continue","return" };
 char *keyOut[7] = { "Int","Main","Return","Break","Continue","Return" };
-char sym[1005][20];
+char sym[1005][200];
 int ret = 0;//程序出错的返回值 
 int tempRetNum = 0;//EXP()式子中的临时返回值 
 FILE *fpin;
@@ -69,7 +69,7 @@ void error(){
 int getToken() {
 	int note = 0;
 	tst = 0;
-	while (fgets(str, 250, fpin) != NULL) {
+	while (fgets(str, 500, fpin) != NULL) {
 		printf("%s\n",str);
 		memset(token, 0, sizeof(token));
 		int iskey = 0;

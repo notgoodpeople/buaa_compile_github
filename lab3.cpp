@@ -9,8 +9,8 @@
 #include <vector>
 #include <stack>
 using namespace std;
-char str[3048];
-char token[3024];
+char str[3072];
+char token[3072];
 int sst = 0;   //表示句子读的位置 sentenceStart
 int tst = 0;   //表示词读的位置 tokenStart
 int symed = 0; //表示存储符号的词组的最后位置
@@ -19,7 +19,7 @@ char key[9][500] = {"int", "main", "return", "const"};
 char keyOut[9][500] = {"Int", "Main", "Return", "Const"};
 char funcCall[9][500] = {"getint", "putint", "getch", "putch"};
 char funcCallOut[9][500] = {"Func(getint)", "Func(putint)", "Func(getch)", "Func(putch)"};
-char sym[1005][3024];
+char sym[1005][3072];
 int ret = 0;		//程序出错的返回值
 int tempRetNum = 0; //EXP()式子中的临时返回值
 struct ExpElem
@@ -141,7 +141,7 @@ int getToken()
 {
 	int note = 0;
 	tst = 0;
-	while (fgets(str, 3000, fpin) != NULL)
+	while (fgets(str, 2000, fpin) != NULL)
 	{
 		memset(token, 0, sizeof(token));
 		int iskey = 0;
@@ -179,10 +179,17 @@ int getToken()
 			{
 				token[tst++] = ch;
 				ch = str[++sst];
-				while ((ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || ch == '_')
+				while ((ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || ch == '_' || ch == '\n')
 				{
-					token[tst++] = ch;
-					ch = str[++sst];
+					if(ch == '\n'){
+						fgets(str, 2000, fpin);
+						sst=-1;
+						ch = str[++sst];
+					}
+					else{
+						token[tst++] = ch;
+						ch = str[++sst];
+					}
 				}
 				token[tst] = '\0';
 				tst = 0;

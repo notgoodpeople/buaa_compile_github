@@ -1228,5 +1228,6 @@ void OperationUnaryOp()
 		num.value = VarMapSt;
 	}
 	ExpStack.push(num);
+	tempExpStack = &ExpStack.top();
 }
 

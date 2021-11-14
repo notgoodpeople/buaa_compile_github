@@ -50,6 +50,7 @@ struct FuncItem
 	int RetType;		//函数返回类型 1为int 0为void
 	vector<int> params; //函数参数列表
 	string funcName;	//LLVM IR中的函数名
+	int paramsNum;     //函数参数个数
 };
 map<string, struct FuncItem> FuncMap;
 map<string, struct FuncItem>::iterator funcIt; //Funcmap变量迭代器
@@ -85,8 +86,8 @@ FILE *fpin;
 FILE *fpout;
 int main(int argc, char *argv[])
 {
-	fpout = fopen(argv[1], "w");
-	fpin = fopen(argv[0], "r");
+	fpout = fopen(argv[2], "w");
+	fpin = fopen(argv[1], "r");
 	if (fpin == NULL)
 	{
 		printf("fpin error");
@@ -265,15 +266,9 @@ int getToken()
 						}
 						else
 						{
-							if (str[sst + 1] == ' ')
-							{
-								char tempChange[2] = {"0"};
-								ChangeTen(10, tempChange);
-							}
-							else
-							{
-								return 8;
-							}
+							char tempChange[2] = {"0"};
+							ChangeTen(10, tempChange);
+							sst++;
 						}
 					}
 				}
@@ -376,6 +371,7 @@ void initFunc()
 	f_getint.RetType = 1;
 	f_getint.params = Item_getint;
 	f_getint.funcName = "@getint";
+	f_getint.paramsNum = 0;
 	FuncMap["Func(getint)"] = f_getint;
 
 	//int getch();
@@ -385,6 +381,7 @@ void initFunc()
 	f_getch.RetType = 1;
 	f_getch.params = Item_getch;
 	f_getch.funcName = "@getch";
+	f_getch.paramsNum = 0;
 	FuncMap["Func(getch)"] = f_getch;
 
 	//int getarray(int []);
@@ -397,6 +394,7 @@ void initFunc()
 	f_putint.RetType = 0;
 	f_putint.params = Item_putint;
 	f_putint.funcName = "@putint";
+	f_putint.paramsNum = 1;
 	FuncMap["Func(putint)"] = f_putint;
 	//void putch(int);
 	fprintf(fpout, "declare void @putch(i32)\n");
@@ -405,6 +403,7 @@ void initFunc()
 	f_putch.RetType = 0;
 	f_putch.params = Item_putch;
 	f_putch.funcName = "@putch";
+	f_putch.paramsNum = 1;
 	FuncMap["Func(putch)"] = f_putch;
 
 	//void putarray(int, int[]);
@@ -413,6 +412,7 @@ void initFunc()
 //语法分析
 int CompUnit()
 {
+	initFunc();
 	fprintf(fpout, "define dso_local ");
 	ret = FuncDef();
 	if (ret != 0)
@@ -681,7 +681,10 @@ int Block()
 	}
 	fprintf(fpout, "{\n");
 	strcpy(token, sym[symst++]);
-	while ((strcmp(token, "Const") == 0) || (strcmp(token, "Int") == 0) || (strcmp(token, "Return") == 0) || (strcmp(token, "Semicolon") == 0) || (token[0] == 'I' && token[1] == 'd' && token[2] == 'e' && token[5] == '('))
+	while ((strcmp(token, "Const") == 0) || (strcmp(token, "Int") == 0) || \
+	(strcmp(token, "Return") == 0) || (strcmp(token, "Semicolon") == 0) || \
+	(token[0] == 'I' && token[1] == 'd' && token[2] == 'e' && token[5] == '(')||\
+	(token[0]=='F'&&token[1]=='u'&&token[4]=='('))
 	{
 		ret = BlockItem();
 		if (ret != 0)
@@ -780,7 +783,7 @@ int Stmt()
 	else
 	{ //待修改
 		Exp();
-		ExpStack.pop();
+		//ExpStack.pop();
 	}
 	/*
 	if(token[0]=='N'&&token[1]=='u'&&token[4]=='e'&&token[5]=='r'){
@@ -1018,19 +1021,17 @@ void FuncCall()
 		printf("error in FuncCall '('");
 		throw "Error";
 	}
-
 	strcpy(token, sym[symst++]);
-
 	if (strcmp(token, "LPar") != 0)
 	{
-		int paramsNum = (*funcIt).second.RetType;
+		int paramsNum = (*funcIt).second.paramsNum;
 		while (paramsNum > 0)
 		{
 			FuncRParams();
 			paramsNum--;
+			strcpy(token, sym[symst++]);
 			if (paramsNum == 0)
 				break;
-			strcpy(token, sym[symst++]);
 			if (strcmp(token, "Comma") != 0)
 			{
 				printf("error in FuncCall FuncParams");
@@ -1040,7 +1041,6 @@ void FuncCall()
 		}
 	}
 
-	strcpy(token, sym[symst++]);
 	if (strcmp(token, "RPar") != 0)
 	{
 		printf("error in FuncCall ')'");
@@ -1058,7 +1058,7 @@ void FuncCall()
 		fprintf(fpout, "    %%%d = call i32 %s", tempExpStack->value, (*funcIt).second.funcName.c_str());
 	}
 	fprintf(fpout, "(");
-	for (int i = 0; i < (*funcIt).second.RetType; i++)
+	for (int i = 0; i < (*funcIt).second.paramsNum; i++)
 	{
 		if (i != 0)
 		{
@@ -1083,7 +1083,7 @@ void FuncCall()
 	{
 		ExpStack.push(*tempExpStack);
 	}
-	fprintf(fpout, ")");
+	fprintf(fpout, ")\n");
 }
 void FuncRParams()
 {

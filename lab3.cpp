@@ -139,6 +139,7 @@ int getToken()
 	tst = 0;
 	while (fgets(str, 250, fpin) != NULL)
 	{
+		printf("%s\n",str);
 		memset(token, 0, sizeof(token));
 		int iskey = 0;
 		sst = 0;

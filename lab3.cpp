@@ -86,8 +86,8 @@ FILE *fpin;
 FILE *fpout;
 int main(int argc, char *argv[])
 {
-	fpout = fopen("out.txt", "w");
-	fpin = fopen("in.txt", "r");
+	fpout = fopen(argv[2], "w");
+	fpin = fopen(argv[1], "r");
 	if (fpin == NULL)
 	{
 		printf("fpin error");
@@ -96,11 +96,15 @@ int main(int argc, char *argv[])
 	{
 		printf("fpout error");
 	}
-	getToken();
-	strcpy(token, sym[symst++]);
-	ret = CompUnit();
-	if (ret != 0)
-		return ret;
+	try{
+		getToken();
+		strcpy(token, sym[symst++]);
+		ret = CompUnit();
+		if (ret != 0)
+			return ret;
+	}catch(...){
+		return 998;
+	}
 	return 0;
 }
 
@@ -139,7 +143,6 @@ int getToken()
 	tst = 0;
 	while (fgets(str, 250, fpin) != NULL)
 	{
-		printf("%s\n",str);
 		memset(token, 0, sizeof(token));
 		int iskey = 0;
 		sst = 0;
@@ -417,7 +420,7 @@ int CompUnit()
 	fprintf(fpout, "define dso_local ");
 	ret = FuncDef();
 	if (ret != 0)
-		return ret;
+		throw "Error";
 	strcpy(token, sym[symst++]);
 	if (token[0] != 0)
 	{
@@ -462,7 +465,7 @@ int ConstDecl()
 	if (strcmp(token, "Semicolon") != 0)
 	{
 		printf("error in ConstDecl ;");
-		return 139;
+		throw "Error";
 	}
 	return 0;
 }
@@ -471,7 +474,7 @@ int Btype()
 	if (strcmp(token, "Int") != 0)
 	{
 		printf("error in Btype()");
-		return 143;
+		throw "Error";
 	}
 	return 0;
 }
@@ -482,7 +485,7 @@ int ConstDef()
 		if ((VarMap.count((string)token)) == 1)
 		{
 			printf("error in ConstDef() Ident");
-			return 135;
+			throw "Error";
 		}
 		struct VarItem *tempVarItem = (struct VarItem *)malloc(sizeof(struct VarItem));
 		tempVarItem->isConst = true;
@@ -494,7 +497,7 @@ int ConstDef()
 		if (strcmp(token, "Assign") != 0)
 		{
 			printf("error in ConstDef() '=' ");
-			return 136;
+			throw "Error";
 		}
 		strcpy(token, sym[symst++]);
 		ret = ConstInitVal();
@@ -513,13 +516,14 @@ int ConstDef()
 		{
 			printf("error in VarDef()");
 			error();
+			return ret;
 		}
 		ExpStack.pop();
 	}
 	else
 	{
 		printf("error in ConstDef()");
-		return 134;
+		throw "Error";
 	}
 	return 0;
 }
@@ -553,7 +557,7 @@ int VarDecl()
 	if (strcmp(token, "Semicolon") != 0)
 	{
 		printf("error in VarDecl ;");
-		return 139;
+		throw "Error";
 	}
 	return 0;
 }
@@ -564,13 +568,14 @@ int VarDef()
 		if (VarMap.count((string)token) == 1)
 		{
 			printf("error in VarDef() Ident");
-			return 135;
+			throw "Error";
 		}
 		varIt = VarMap.find((string)token);
 		if (varIt != VarMap.end())
 		{
 			printf("error in varDef()");
 			error();
+			return ret;
 		}
 		struct VarItem *tempVarItem = (struct VarItem *)malloc(sizeof(struct VarItem));
 		tempVarItem->isConst = false;
@@ -601,13 +606,14 @@ int VarDef()
 		{
 			printf("error in VarDef()");
 			error();
+			return ret;
 		}
 		ExpStack.pop();
 	}
 	else
 	{
 		printf("error in VarDef()");
-		return 134;
+		throw "Error";
 	}
 	return 0;
 }
@@ -630,14 +636,14 @@ int FuncDef()
 	if (strcmp(token, "LPar") != 0)
 	{
 		printf("error in FuncDef '('");
-		return 103;
+		throw "Error";
 	}
 	fprintf(fpout, "(");
 	strcpy(token, sym[symst++]);
 	if (strcmp(token, "RPar") != 0)
 	{
 		printf("error in FuncDef ')'");
-		return 104;
+		throw "Error";
 	}
 	fprintf(fpout, ")");
 	strcpy(token, sym[symst++]);
@@ -651,7 +657,7 @@ int FuncType()
 	if (strcmp(token, "Int") != 0)
 	{
 		printf("error in FuncType");
-		return 101;
+		throw "Error";
 	}
 	fprintf(fpout, "i32 ");
 	return 0;
@@ -669,7 +675,7 @@ int Ident()
 	else
 	{
 		printf("error in Ident");
-		return 141;
+		throw "Error";
 	}
 	return 0;
 }
@@ -678,7 +684,7 @@ int Block()
 	if (strcmp(token, "LBrace") != 0)
 	{
 		printf("error in Block '{'");
-		return 105;
+		throw "Error";
 	}
 	fprintf(fpout, "{\n");
 	strcpy(token, sym[symst++]);
@@ -695,7 +701,7 @@ int Block()
 	if (strcmp(token, "RBrace") != 0)
 	{
 		printf("error in Block '}'");
-		return 107;
+		throw "Error";
 	}
 	fprintf(fpout, "}");
 	return 0;
@@ -732,13 +738,14 @@ int Stmt()
 		{
 			printf("error in Stmt");
 			error();
+			return ret;
 		}
 		ExpStack.pop();
 		strcpy(token, sym[symst++]);
 		if (strcmp(token, "Semicolon") != 0)
 		{
 			printf("error in Stmt ';'");
-			return 105;
+			throw "Error";
 		}
 		fprintf(fpout, "\n");
 		return 0;
@@ -754,7 +761,7 @@ int Stmt()
 		if (strcmp(token, "Assign") != 0)
 		{
 			printf("error in Stmt '='");
-			return 155;
+			throw "Error";
 		}
 
 		strcpy(token, sym[symst++]);
@@ -772,11 +779,12 @@ int Stmt()
 		{
 			printf("error in Stmt");
 			error();
+			return ret;
 		}
 		if (strcmp(token, "Semicolon") != 0)
 		{
 			printf("error in Stmt ';'");
-			return 166;
+			throw "Error";
 		}
 		fprintf(fpout, "\n");
 		return 0;
@@ -955,6 +963,7 @@ int PrimaryExp()
 		{
 			printf("error in PrimaryExp() RPar");
 			error();
+			return ret;
 		}
 	}
 	else if (token[0] == 'N' && token[1] == 'u' && token[4] == 'e' && token[5] == 'r')
@@ -981,6 +990,7 @@ int PrimaryExp()
 	{
 		printf("error in PrimaryExp()");
 		error();
+		return ret;
 	}
 	if (ret != 0)
 	{

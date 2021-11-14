@@ -9,8 +9,8 @@
 #include <vector>
 #include <stack>
 using namespace std;
-char str[256];
-char token[20];
+char str[1024];
+char token[512];
 int sst = 0;   //表示句子读的位置 sentenceStart
 int tst = 0;   //表示词读的位置 tokenStart
 int symed = 0; //表示存储符号的词组的最后位置
@@ -19,7 +19,7 @@ char key[9][15] = {"int", "main", "return", "const"};
 char keyOut[9][15] = {"Int", "Main", "Return", "Const"};
 char funcCall[9][15] = {"getint", "putint", "getch", "putch"};
 char funcCallOut[9][15] = {"Func(getint)", "Func(putint)", "Func(getch)", "Func(putch)"};
-char sym[3005][20];
+char sym[1005][512];
 int ret = 0;		//程序出错的返回值
 int tempRetNum = 0; //EXP()式子中的临时返回值
 struct ExpElem
@@ -141,7 +141,7 @@ int getToken()
 {
 	int note = 0;
 	tst = 0;
-	while (fgets(str, 250, fpin) != NULL)
+	while (fgets(str, 1000, fpin) != NULL)
 	{
 		memset(token, 0, sizeof(token));
 		int iskey = 0;
@@ -756,7 +756,11 @@ int Stmt()
 	}
 	else if (token[0] == 'I' && token[1] == 'd' && token[2] == 'e' && token[5] == '(')
 	{
+		LvalIsConst = false;
 		int retRegister = LVal();
+		if(LvalIsConst){
+			throw "Error";
+		}
 		strcpy(token, sym[symst++]);
 		if (strcmp(token, "Assign") != 0)
 		{
@@ -1213,3 +1217,4 @@ void OperationUnaryOp()
 	}
 	ExpStack.push(num);
 }
+

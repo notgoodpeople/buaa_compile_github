@@ -785,11 +785,11 @@ int Stmt()
 		strcpy(token, sym[symst++]);
 		if (tempExpStack->type == 1)
 		{
-			fprintf(fpout, "    store i32 %d, i32* %%%d", tempExpStack->value, retRegister);
+			fprintf(fpout, "    store i32 %d, i32* %%%d\n", tempExpStack->value, retRegister);
 		}
 		else if (tempExpStack->type == 3)
 		{
-			fprintf(fpout, "    store i32 %%%d, i32* %%%d", tempExpStack->value, retRegister);
+			fprintf(fpout, "    store i32 %%%d, i32* %%%d\n", tempExpStack->value, retRegister);
 		}
 		else
 		{
@@ -1218,11 +1218,11 @@ void OperationUnaryOp()
 	{
 		if (num.type == 1)
 		{
-			fprintf(fpout, "    %%%d = sub i32 0, %d\n", ++VarMapSt, num.value);
+			fprintf(fpout, "    %%%d = sub i32 %d, 0\n", ++VarMapSt, num.value);
 		}
 		else
 		{
-			fprintf(fpout, "    %%%d = sub i32 0, %%%d\n", ++VarMapSt, num.value);
+			fprintf(fpout, "    %%%d = sub i32 %%%d, 0\n", ++VarMapSt, num.value);
 		}
 		num.type = 3;
 		num.value = VarMapSt;

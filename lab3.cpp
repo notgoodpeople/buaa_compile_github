@@ -11,49 +11,49 @@
 using namespace std;
 char str[256];
 char token[20];
-int sst = 0;   //±íÊ¾¾ä×Ó¶ÁµÄÎ»ÖÃ sentenceStart
-int tst = 0;   //±íÊ¾´Ê¶ÁµÄÎ»ÖÃ tokenStart
-int symed = 0; //±íÊ¾´æ´¢·ûºÅµÄ´Ê×éµÄ×îºóÎ»ÖÃ
-int symst = 0; //±íÊ¾ ´æ´¢·ûºÅµÄ´Ê×éµÄµ±Ç°¶ÁÈ¡
+int sst = 0;   //ï¿½ï¿½Ê¾ï¿½ï¿½ï¿½Ó¶ï¿½ï¿½ï¿½Î»ï¿½ï¿½ sentenceStart
+int tst = 0;   //ï¿½ï¿½Ê¾ï¿½Ê¶ï¿½ï¿½ï¿½Î»ï¿½ï¿½ tokenStart
+int symed = 0; //ï¿½ï¿½Ê¾ï¿½æ´¢ï¿½ï¿½ï¿½ÅµÄ´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î»ï¿½ï¿½
+int symst = 0; //ï¿½ï¿½Ê¾ ï¿½æ´¢ï¿½ï¿½ï¿½ÅµÄ´ï¿½ï¿½ï¿½Äµï¿½Ç°ï¿½ï¿½È?
 char key[9][15] = {"int", "main", "return", "const"};
 char keyOut[9][15] = {"Int", "Main", "Return", "Const"};
 char funcCall[9][15] = {"getint", "putint", "getch", "putch"};
 char funcCallOut[9][15] = {"Func(getint)", "Func(putint)", "Func(getch)", "Func(putch)"};
 char sym[3005][20];
-int ret = 0;		//³ÌÐò³ö´íµÄ·µ»ØÖµ
-int tempRetNum = 0; //EXP()Ê½×ÓÖÐµÄÁÙÊ±·µ»ØÖµ
+int ret = 0;		//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä·ï¿½ï¿½ï¿½Ö?
+int tempRetNum = 0; //EXP()Ê½ï¿½ï¿½ï¿½Ðµï¿½ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½Öµ
 struct ExpElem
 {
-	int type; //1 ExpÖÐµÄÊý×Ö£¬2 ÔËËã·û£¬3 ¼Ä´æÆ÷£¬4 UnaryOp
+	int type; //1 Expï¿½Ðµï¿½ï¿½ï¿½ï¿½Ö£ï¿½2 ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿?3 ï¿½Ä´ï¿½ï¿½ï¿½ï¿½ï¿½4 UnaryOp
 	/* 
-	1£ºÊý×ÖµÄÖµ
-	2£º1¼Ó·¨£¬2¼õ·¨£¬3³Ë·¨£¬4³ý·¨£¬5È¡Óà
-	3£º¼Ä´æÆ÷µÄ±êºÅ
-	4£º1ÕýºÅ 2¸ººÅ
+	1ï¿½ï¿½ï¿½ï¿½ï¿½Öµï¿½Öµ
+	2ï¿½ï¿½1ï¿½Ó·ï¿½ï¿½ï¿½2ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½3ï¿½Ë·ï¿½ï¿½ï¿½4ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½5È¡ï¿½ï¿½
+	3ï¿½ï¿½ï¿½Ä´ï¿½ï¿½ï¿½ï¿½Ä±ï¿½ï¿?
+	4ï¿½ï¿½1ï¿½ï¿½ï¿½ï¿½ 2ï¿½ï¿½ï¿½ï¿½
 	*/
 	int value;
 };
 struct ExpElem *tempExpStack;
-stack<struct ExpElem> ExpStack; //ÓÃÓÚÉú³É¼ÆËãÖµLLVM IRµÄÕ»
+stack<struct ExpElem> ExpStack; //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½É¼ï¿½ï¿½ï¿½ÖµLLVM IRï¿½ï¿½Õ»
 bool VarInInit = false;
 bool LvalIsConst = false;
 struct VarItem
 {
-	bool isConst;	 //ÊÇ·ñÊÇ³£Á¿
-	int registerNum; //¼Ä´æÆ÷µÄºÅÂë
+	bool isConst;	 //ï¿½Ç·ï¿½ï¿½Ç³ï¿½ï¿½ï¿½
+	int registerNum; //ï¿½Ä´ï¿½ï¿½ï¿½ï¿½Äºï¿½ï¿½ï¿½
 };
-map<string, struct VarItem>::iterator varIt; //Varmap±äÁ¿µü´úÆ÷
+map<string, struct VarItem>::iterator varIt; //Varmapï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 map<string, struct VarItem> VarMap;
-int VarMapSt = 0; //µ±Ç°ÐÂ¼Ä´æÆ÷µÄÖµ
+int VarMapSt = 0; //ï¿½ï¿½Ç°ï¿½Â¼Ä´ï¿½ï¿½ï¿½ï¿½ï¿½Öµ
 struct FuncItem
 {
-	int RetType;		//º¯Êý·µ»ØÀàÐÍ 1Îªint 0Îªvoid
-	vector<int> params; //º¯Êý²ÎÊýÁÐ±í
-	string funcName;	//LLVM IRÖÐµÄº¯ÊýÃû
-	int paramsNum;     //º¯Êý²ÎÊý¸öÊý
+	int RetType;		//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ 1Îªint 0Îªvoid
+	vector<int> params; //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð±ï¿½
+	string funcName;	//LLVM IRï¿½ÐµÄºï¿½ï¿½ï¿½ï¿½ï¿½
+	int paramsNum;     //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 };
 map<string, struct FuncItem> FuncMap;
-map<string, struct FuncItem>::iterator funcIt; //Funcmap±äÁ¿µü´úÆ÷
+map<string, struct FuncItem>::iterator funcIt; //Funcmapï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 int LVal();
 int getToken();
 int CompUnit();
@@ -104,9 +104,9 @@ int main(int argc, char *argv[])
 	return 0;
 }
 
-//½øÖÆ×ª»»
+//ï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½
 void ChangeTen(int n, char str[])
-{ //½«n½øÖÆÊý×ª»»³É10½øÖÆÊý
+{ //ï¿½ï¿½nï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½ï¿½ï¿½10ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	int len = strlen(str), i, sum = 0, t = 1;
 	for (i = len - 1; i >= 0; i--)
 	{
@@ -126,13 +126,13 @@ void ChangeTen(int n, char str[])
 	}
 	sprintf(sym[symed++], "Number(%d)", sum);
 }
-//ÔÚ±í´ïÊ½¼ÆËã£¬Exp()Ààº¯ÊýÊ± Ê¹ÓÃ¸Ãº¯Êý±¨´í
+//ï¿½Ú±ï¿½ï¿½ï¿½Ê½ï¿½ï¿½ï¿½ã£¬Exp()ï¿½àº¯ï¿½ï¿½Ê± Ê¹ï¿½Ã¸Ãºï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 void error()
 {
 	ret = 120;
 	printf("\nExp() error");
 }
-//´Ê·¨·ÖÎö
+//ï¿½Ê·ï¿½ï¿½ï¿½ï¿½ï¿½
 int getToken()
 {
 	int note = 0;
@@ -170,7 +170,7 @@ int getToken()
 				note = 1;
 				sst++;
 			}
-			//Ident»òÕß¹Ø¼ü×Ö
+			//Identï¿½ï¿½ï¿½ß¹Ø¼ï¿½ï¿½ï¿½
 			else if ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || ch == '_')
 			{
 				token[tst++] = ch;
@@ -182,7 +182,7 @@ int getToken()
 				}
 				token[tst] = '\0';
 				tst = 0;
-				//ÅÐ¶ÏÊÇ·ñÊÇ¹Ø¼ü×Ö
+				//ï¿½Ð¶ï¿½ï¿½Ç·ï¿½ï¿½Ç¹Ø¼ï¿½ï¿½ï¿½
 				for (int i = 0; i <= 3; i++)
 				{
 					if (strcmp(token, key[i]) == 0)
@@ -191,7 +191,7 @@ int getToken()
 						iskey = 1;
 					}
 				}
-				//ÅÐ¶ÏÊÇ·ñÊÇµ÷ÓÃº¯Êý
+				//ï¿½Ð¶ï¿½ï¿½Ç·ï¿½ï¿½Çµï¿½ï¿½Ãºï¿½ï¿½ï¿½
 				for (int i = 0; i <= 3; i++)
 				{
 					if (strcmp(token, funcCall[i]) == 0)
@@ -205,7 +205,7 @@ int getToken()
 					sprintf(sym[symed++], "Ident(%s)", token);
 				}
 			}
-			//NumberÀà
+			//Numberï¿½ï¿½
 			else if (ch >= '0' && ch <= '9')
 			{
 				if (ch != '0')
@@ -223,7 +223,7 @@ int getToken()
 				}
 				else
 				{
-					//16½øÖÆ
+					//16ï¿½ï¿½ï¿½ï¿½
 					if (str[sst + 1] == 'x' || str[sst + 1] == 'X')
 					{
 						sst++;
@@ -241,13 +241,13 @@ int getToken()
 							tst = 0;
 							ChangeTen(16, token);
 						}
-						//16½øÖÆNumber³ö´í
+						//16ï¿½ï¿½ï¿½ï¿½Numberï¿½ï¿½ï¿½ï¿½
 						else
 						{
 							return 16;
 						}
 					}
-					//8½øÖÆ
+					//8ï¿½ï¿½ï¿½ï¿½
 					else
 					{
 						if (str[sst + 1] >= '0' && str[sst + 1] <= '8')
@@ -361,7 +361,7 @@ int getToken()
 	}
 	return 0;
 }
-//³õÊ¼»¯º¯Êýµ÷ÓÃ
+//ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 void initFunc()
 {
 	//int getint();
@@ -409,7 +409,7 @@ void initFunc()
 	//void putarray(int, int[]);
 	//fprintf(fpout,"declare i32 @getint()\n");
 }
-//Óï·¨·ÖÎö
+//ï¿½ï·¨ï¿½ï¿½ï¿½ï¿½
 int CompUnit()
 {
 	initFunc();
@@ -421,6 +421,7 @@ int CompUnit()
 	if (token[0] != 0)
 	{
 		printf("error in CompUnit");
+		throw "Error";
 	}
 	return 0;
 }
@@ -430,6 +431,9 @@ int Decl()
 	{
 		strcpy(token, sym[symst++]);
 		ret = ConstDecl();
+		if(ret!=0){
+			throw "Error";
+		}
 		return ret;
 	}
 	else
@@ -439,7 +443,7 @@ int Decl()
 }
 int ConstDecl()
 {
-	//constÔÚDecl()ÖÐÒÑ¾­¼ì²â
+	//constï¿½ï¿½Decl()ï¿½ï¿½ï¿½Ñ¾ï¿½ï¿½ï¿½ï¿?
 
 	ret = Btype();
 	if (ret != 0)
@@ -454,6 +458,7 @@ int ConstDecl()
 		if (ret != 0)
 		{
 			printf("error in ConstDecl");
+			throw "Error";
 			return ret;
 		}
 		strcpy(token, sym[symst++]);
@@ -461,6 +466,7 @@ int ConstDecl()
 	if (strcmp(token, "Semicolon") != 0)
 	{
 		printf("error in ConstDecl ;");
+		throw "Error";
 		return 139;
 	}
 	return 0;
@@ -470,6 +476,7 @@ int Btype()
 	if (strcmp(token, "Int") != 0)
 	{
 		printf("error in Btype()");
+		throw "Error";
 		return 143;
 	}
 	return 0;
@@ -481,6 +488,7 @@ int ConstDef()
 		if ((VarMap.count((string)token)) == 1)
 		{
 			printf("error in ConstDef() Ident");
+			throw "Error";
 			return 135;
 		}
 		struct VarItem *tempVarItem = (struct VarItem *)malloc(sizeof(struct VarItem));
@@ -493,6 +501,7 @@ int ConstDef()
 		if (strcmp(token, "Assign") != 0)
 		{
 			printf("error in ConstDef() '=' ");
+			throw "Error";
 			return 136;
 		}
 		strcpy(token, sym[symst++]);
@@ -511,13 +520,14 @@ int ConstDef()
 		else
 		{
 			printf("error in VarDef()");
-			error();
+			throw "Error";
 		}
 		ExpStack.pop();
 	}
 	else
 	{
 		printf("error in ConstDef()");
+		throw "Error";
 		return 134;
 	}
 	return 0;
@@ -545,6 +555,7 @@ int VarDecl()
 		if (ret != 0)
 		{
 			printf("error in VarDecl");
+			throw "Error";
 			return ret;
 		}
 		strcpy(token, sym[symst++]);
@@ -552,6 +563,7 @@ int VarDecl()
 	if (strcmp(token, "Semicolon") != 0)
 	{
 		printf("error in VarDecl ;");
+		throw "Error";
 		return 139;
 	}
 	return 0;
@@ -563,13 +575,13 @@ int VarDef()
 		if (VarMap.count((string)token) == 1)
 		{
 			printf("error in VarDef() Ident");
-			return 135;
+			throw "Error";
 		}
 		varIt = VarMap.find((string)token);
 		if (varIt != VarMap.end())
 		{
 			printf("error in varDef()");
-			error();
+			throw "Error";
 		}
 		struct VarItem *tempVarItem = (struct VarItem *)malloc(sizeof(struct VarItem));
 		tempVarItem->isConst = false;
@@ -585,8 +597,10 @@ int VarDef()
 		}
 		strcpy(token, sym[symst++]);
 		ret = InitVal();
-		if (ret != 0)
+		if (ret != 0){
+			throw "Error";
 			return ret;
+		}
 		tempExpStack = &ExpStack.top();
 		if (tempExpStack->type == 1)
 		{
@@ -599,13 +613,14 @@ int VarDef()
 		else
 		{
 			printf("error in VarDef()");
-			error();
+			throw "Error";
 		}
 		ExpStack.pop();
 	}
 	else
 	{
 		printf("error in VarDef()");
+		throw "Error";
 		return 134;
 	}
 	return 0;
@@ -629,6 +644,7 @@ int FuncDef()
 	if (strcmp(token, "LPar") != 0)
 	{
 		printf("error in FuncDef '('");
+		throw "Error";
 		return 103;
 	}
 	fprintf(fpout, "(");
@@ -636,6 +652,7 @@ int FuncDef()
 	if (strcmp(token, "RPar") != 0)
 	{
 		printf("error in FuncDef ')'");
+		throw "Error";
 		return 104;
 	}
 	fprintf(fpout, ")");
@@ -650,6 +667,7 @@ int FuncType()
 	if (strcmp(token, "Int") != 0)
 	{
 		printf("error in FuncType");
+		throw "Error";
 		return 101;
 	}
 	fprintf(fpout, "i32 ");
@@ -668,6 +686,7 @@ int Ident()
 	else
 	{
 		printf("error in Ident");
+		throw "Error";
 		return 141;
 	}
 	return 0;
@@ -677,6 +696,7 @@ int Block()
 	if (strcmp(token, "LBrace") != 0)
 	{
 		printf("error in Block '{'");
+		throw "Error";
 		return 105;
 	}
 	fprintf(fpout, "{\n");
@@ -694,6 +714,7 @@ int Block()
 	if (strcmp(token, "RBrace") != 0)
 	{
 		printf("error in Block '}'");
+		throw "Error";
 		return 107;
 	}
 	fprintf(fpout, "}");
@@ -730,13 +751,14 @@ int Stmt()
 		else
 		{
 			printf("error in Stmt");
-			error();
+			throw "Error";
 		}
 		ExpStack.pop();
 		strcpy(token, sym[symst++]);
 		if (strcmp(token, "Semicolon") != 0)
 		{
 			printf("error in Stmt ';'");
+			throw "Error";
 			return 105;
 		}
 		fprintf(fpout, "\n");
@@ -753,6 +775,7 @@ int Stmt()
 		if (strcmp(token, "Assign") != 0)
 		{
 			printf("error in Stmt '='");
+			throw "Error";
 			return 155;
 		}
 
@@ -770,18 +793,19 @@ int Stmt()
 		else
 		{
 			printf("error in Stmt");
-			error();
+			throw "Error";
 		}
 		if (strcmp(token, "Semicolon") != 0)
 		{
 			printf("error in Stmt ';'");
+			throw "Error";
 			return 166;
 		}
 		fprintf(fpout, "\n");
 		return 0;
 	}
 	else
-	{ //´ýÐÞ¸Ä
+	{ //ï¿½ï¿½ï¿½Þ¸ï¿½
 		Exp();
 		//ExpStack.pop();
 	}
@@ -813,7 +837,7 @@ int AddExp()
 	if (ret != 0)
 		return ret;
 	if (strcmp(sym[symst], "Plus") == 0 || strcmp(sym[symst], "Minus") == 0)
-	{ //¶ÁºóÃæÒ»¸ö´Ê£¬ÅÐ¶ÏÊÇ·ñÕýÈ·
+	{ //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½Ê£ï¿½ï¿½Ð¶ï¿½ï¿½Ç·ï¿½ï¿½ï¿½È·
 		strcpy(token, sym[symst++]);
 	}
 	while (strcmp(token, "Plus") == 0 || strcmp(token, "Minus") == 0)
@@ -825,14 +849,14 @@ int AddExp()
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 2;
-			tempExpStack->value = 1; //ÊÇ¼Ó·¨
+			tempExpStack->value = 1; //ï¿½Ç¼Ó·ï¿½
 			ExpStack.push(*tempExpStack);
 		}
 		else
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 2;
-			tempExpStack->value = 2; //ÊÇ¼õ·¨
+			tempExpStack->value = 2; //ï¿½Ç¼ï¿½ï¿½ï¿½
 			ExpStack.push(*tempExpStack);
 		}
 		ret = MulExp();
@@ -840,7 +864,7 @@ int AddExp()
 			return ret;
 		Operation();
 		if (strcmp(sym[symst], "Plus") == 0 || strcmp(sym[symst], "Minus") == 0)
-		{ //¶ÁºóÃæÒ»¸ö´Ê£¬ÅÐ¶ÏÊÇ·ñÕýÈ·
+		{ //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½Ê£ï¿½ï¿½Ð¶ï¿½ï¿½Ç·ï¿½ï¿½ï¿½È·
 			strcpy(token, sym[symst++]);
 		}
 	}
@@ -854,7 +878,7 @@ int MulExp()
 	if (ret != 0)
 		return ret;
 	if (strcmp(sym[symst], "Mult") == 0 || strcmp(sym[symst], "Div") == 0 || strcmp(sym[symst], "Surplus") == 0)
-	{ //¶ÁºóÃæÒ»¸ö´Ê£¬ÅÐ¶ÏÊÇ·ñÕýÈ·
+	{ //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½Ê£ï¿½ï¿½Ð¶ï¿½ï¿½Ç·ï¿½ï¿½ï¿½È·
 		strcpy(token, sym[symst++]);
 	}
 	while (strcmp(token, "Mult") == 0 || strcmp(token, "Div") == 0 || strcmp(token, "Surplus") == 0)
@@ -866,21 +890,21 @@ int MulExp()
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 2;
-			tempExpStack->value = 3; //ÊÇ³Ë·¨
+			tempExpStack->value = 3; //ï¿½Ç³Ë·ï¿½
 			ExpStack.push(*tempExpStack);
 		}
 		else if (strcmp(temptoken, "Div") == 0)
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 2;
-			tempExpStack->value = 4; //ÊÇ³ý·¨
+			tempExpStack->value = 4; //ï¿½Ç³ï¿½ï¿½ï¿½
 			ExpStack.push(*tempExpStack);
 		}
 		else
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 2;
-			tempExpStack->value = 5; //ÊÇÈ¡Óà
+			tempExpStack->value = 5; //ï¿½ï¿½È¡ï¿½ï¿½
 			ExpStack.push(*tempExpStack);
 		}
 		RetNum = UnaryExp();
@@ -888,7 +912,7 @@ int MulExp()
 			return ret;
 		Operation();
 		if (strcmp(sym[symst], "Mult") == 0 || strcmp(sym[symst], "Div") == 0 || strcmp(sym[symst], "Surplus") == 0)
-		{ //¶ÁºóÃæÒ»¸ö´Ê£¬ÅÐ¶ÏÊÇ·ñÕýÈ·
+		{ //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½Ê£ï¿½ï¿½Ð¶ï¿½ï¿½Ç·ï¿½ï¿½ï¿½È·
 			strcpy(token, sym[symst++]);
 		}
 	}
@@ -928,17 +952,17 @@ void UnaryOp()
 	if (strcmp(token, "Plus") == 0 || strcmp(token, "Minus") == 0)
 	{
 		if (strcmp(token, "Plus") == 0)
-		{ //¶àÓàÒ»¸ö+-ºÅ£¬ÔòÒÔ´ËÀ´ÅÐ¶ÏNumberµÄÕý¸º
+		{ //ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½+-ï¿½Å£ï¿½ï¿½ï¿½ï¿½Ô´ï¿½ï¿½ï¿½ï¿½Ð¶ï¿½Numberï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 4;
-			tempExpStack->value = 1; //ÊÇÕýºÅ
+			tempExpStack->value = 1; //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 			ExpStack.push(*tempExpStack);
 		}
 		else
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 4;
-			tempExpStack->value = 2; //ÊÇ¸ººÅ
+			tempExpStack->value = 2; //ï¿½Ç¸ï¿½ï¿½ï¿½
 			ExpStack.push(*tempExpStack);
 		}
 	}
@@ -953,7 +977,7 @@ int PrimaryExp()
 		if (strcmp(token, "RPar") != 0)
 		{
 			printf("error in PrimaryExp() RPar");
-			error();
+			throw "Error";
 		}
 	}
 	else if (token[0] == 'N' && token[1] == 'u' && token[4] == 'e' && token[5] == 'r')
@@ -979,7 +1003,7 @@ int PrimaryExp()
 	else
 	{
 		printf("error in PrimaryExp()");
-		error();
+		throw "Error";
 	}
 	if (ret != 0)
 	{
@@ -989,7 +1013,7 @@ int PrimaryExp()
 }
 int LVal()
 {
-	//¼ì²éÊÇ·ñÊÇÒÑ¾­¶¨ÒåµÄ±äÁ¿
+	//ï¿½ï¿½ï¿½ï¿½Ç·ï¿½ï¿½ï¿½ï¿½Ñ¾ï¿½ï¿½ï¿½ï¿½ï¿½Ä±ï¿½ï¿½ï¿½
 	bool declared = false;
 	varIt = VarMap.find((string)token);
 	if (varIt != VarMap.end())
@@ -1005,7 +1029,7 @@ int LVal()
 	{
 		VarInInit = true;
 	}
-	return (*varIt).second.registerNum; //·µ»Ø¼Ä´æÆ÷Êý×Ö
+	return (*varIt).second.registerNum; //ï¿½ï¿½ï¿½Ø¼Ä´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 }
 void FuncCall()
 {
@@ -1101,21 +1125,21 @@ void Operation()
 	if (num2.type != 1 && num2.type != 3)
 	{
 		printf("errro in Operation");
-		error();
+		throw "Error";
 	}
 	ExpStack.pop();
 	op = ExpStack.top();
 	if (op.type != 2)
 	{
 		printf("errro in Operation");
-		error();
+		throw "Error";
 	}
 	ExpStack.pop();
 	num1 = ExpStack.top();
 	if (num1.type != 1 && num1.type != 3)
 	{
 		printf("error in Operation");
-		error();
+		throw "Error";
 	}
 	ExpStack.pop();
 
@@ -1134,13 +1158,13 @@ void Operation()
 		fprintf(fpout, "sub i32 ");
 		break;
 	case 3:
-		fprintf(fpout, "cheng i32 ");
+		fprintf(fpout, "mul i32 ");
 		break;
 	case 4:
 		fprintf(fpout, "sdiv i32 ");
 		break;
 	case 5:
-		fprintf(fpout, "quyu i32 ");
+		fprintf(fpout, "srem i32 ");
 		break;
 	}
 	if (num1.type == 1)
@@ -1168,7 +1192,7 @@ void OperationUnaryOp()
 	if (num.type != 1 && num.type != 3)
 	{
 		printf("error in OperationUnaryOp");
-		error();
+		throw "Error";
 	}
 
 	if (ExpStack.empty())
@@ -1180,7 +1204,7 @@ void OperationUnaryOp()
 	struct ExpElem op = ExpStack.top();
 	ExpStack.pop();
 
-	//ÒÑ¾­µ½Õý³£µÄ¼Ó¼õ·¨ÁË
+	//ï¿½Ñ¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼Ó¼ï¿½ï¿½ï¿½ï¿½ï¿½
 	if (op.type != 4)
 	{
 		ExpStack.push(op);

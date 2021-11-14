@@ -141,7 +141,7 @@ int getToken()
 {
 	int note = 0;
 	tst = 0;
-	while (fgets(str, 2000, fpin) != NULL)
+	while (fgets(str, 3000, fpin) != NULL)
 	{
 		memset(token, 0, sizeof(token));
 		int iskey = 0;

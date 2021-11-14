@@ -4,15 +4,15 @@
 #include<ctype.h>
 char str[256];
 char token[20];
-int sst = 0;  //±íÊ¾¾ä×Ó¶ÁµÄÎ»ÖÃ sentenceStart
-int tst = 0;  //±íÊ¾´Ê¶ÁµÄÎ»ÖÃ tokenStart
-int symed = 0; //±íÊ¾´æ´¢·ûºÅµÄ´Ê×éµÄ×îºóÎ»ÖÃ 
-int symst = 0; //±íÊ¾ ´æ´¢·ûºÅµÄ´Ê×éµÄµ±Ç°¶ÁÈ¡ 
+int sst = 0;  //è¡¨ç¤ºå¥å­è¯»çš„ä½ç½® sentenceStart
+int tst = 0;  //è¡¨ç¤ºè¯è¯»çš„ä½ç½® tokenStart
+int symed = 0; //è¡¨ç¤ºå­˜å‚¨ç¬¦å·çš„è¯ç»„çš„æœ€åŽä½ç½® 
+int symst = 0; //è¡¨ç¤º å­˜å‚¨ç¬¦å·çš„è¯ç»„çš„å½“å‰è¯»å– 
 char *key[7] = { "int","main","return","break","continue","return" };
 char *keyOut[7] = { "Int","Main","Return","Break","Continue","Return" };
 char sym[1005][20];
-int ret = 0;//³ÌÐò³ö´íµÄ·µ»ØÖµ 
-int tempRetNum = 0;//EXP()Ê½×ÓÖÐµÄÁÙÊ±·µ»ØÖµ 
+int ret = 0;//ç¨‹åºå‡ºé”™çš„è¿”å›žå€¼ 
+int tempRetNum = 0;//EXP()å¼å­ä¸­çš„ä¸´æ—¶è¿”å›žå€¼ 
 FILE *fpin;
 FILE *fpout;
 int getToken();
@@ -43,8 +43,8 @@ int main(int argc, char *argv[]) {
 	return 0;
 }
 
-//½øÖÆ×ª»»
-void ChangeTen(int n, char str[]) {       //½«n½øÖÆÊý×ª»»³É10½øÖÆÊý
+//è¿›åˆ¶è½¬æ¢
+void ChangeTen(int n, char str[]) {       //å°†nè¿›åˆ¶æ•°è½¬æ¢æˆ10è¿›åˆ¶æ•°
 	int len = strlen(str), i, sum = 0, t = 1;
 	for (i = len - 1; i >= 0; i--) {
 		if (str[i] >= 'A'&&str[i] < 'G') {
@@ -60,16 +60,17 @@ void ChangeTen(int n, char str[]) {       //½«n½øÖÆÊý×ª»»³É10½øÖÆÊý
 	}
 	sprintf(sym[symed++], "Number(%d)", sum);
 }
-//ÔÚ±í´ïÊ½¼ÆËã£¬Exp()Ààº¯ÊýÊ± Ê¹ÓÃ¸Ãº¯Êý±¨´í
+//åœ¨è¡¨è¾¾å¼è®¡ç®—ï¼ŒExp()ç±»å‡½æ•°æ—¶ ä½¿ç”¨è¯¥å‡½æ•°æŠ¥é”™
 void error(){
 	ret=120;
 	printf("\nExp() error") ; 
 } 
-//´Ê·¨·ÖÎö 
+//è¯æ³•åˆ†æž 
 int getToken() {
 	int note = 0;
 	tst = 0;
 	while (fgets(str, 250, fpin) != NULL) {
+		printf("%s\n",str);
 		memset(token, 0, sizeof(token));
 		int iskey = 0;
 		sst = 0;
@@ -95,7 +96,7 @@ int getToken() {
 				note = 1;
 				sst++;
 			}
-			//Ident»òÕß¹Ø¼ü×Ö 
+			//Identæˆ–è€…å…³é”®å­— 
 			else if ((ch >= 'a'&&ch <= 'z') || (ch >= 'A'&&ch <= 'Z')) {
 				token[tst++] = ch;
 				ch = str[++sst];
@@ -112,7 +113,7 @@ int getToken() {
 					}
 				}
 			}
-			//NumberÀà 
+			//Numberç±» 
 			else if (ch >= '0'&&ch <= '9') {
 				if (ch != '0') {
 					token[tst++] = ch;
@@ -126,7 +127,7 @@ int getToken() {
 					ChangeTen(10, token);
 				}
 				else {
-					//16½øÖÆ 
+					//16è¿›åˆ¶ 
 					if (str[sst + 1] == 'x' || str[sst + 1] == 'X') {
 						sst++;
 						ch = str[++sst];
@@ -141,12 +142,12 @@ int getToken() {
 							tst = 0;
 							ChangeTen(16, token);
 						}
-						//16½øÖÆNumber³ö´í 
+						//16è¿›åˆ¶Numberå‡ºé”™ 
 						else {
 							return 16;
 						}
 					}
-					//8½øÖÆ 
+					//8è¿›åˆ¶ 
 					else {
 						if (str[sst + 1] >= '0'&&str[sst + 1] <= '8') {
 							ch = str[++sst];
@@ -306,7 +307,7 @@ int Stmt() {
 	}
 	fprintf(fpout, "    ret ");
 	strcpy(token, sym[symst++]);
-	tempRetNum = Exp();            //½øÈë±í´ïÊ½Óï·¨µÄ¼ÆËãÓë·ÖÎö 
+	tempRetNum = Exp();            //è¿›å…¥è¡¨è¾¾å¼è¯­æ³•çš„è®¡ç®—ä¸Žåˆ†æž 
 	fprintf(fpout, "i32 %d", tempRetNum);
 	if (ret != 0)  return ret;
 	/*
@@ -336,7 +337,7 @@ int Exp() {
 int AddExp() {
 	int RetNum = MulExp();
 	if (ret != 0) return ret;
-	if (strcmp(sym[symst], "Plus") == 0|| strcmp(sym[symst], "Minus") == 0) {    //¶ÁºóÃæÒ»¸ö´Ê£¬ÅÐ¶ÏÊÇ·ñÕýÈ· 
+	if (strcmp(sym[symst], "Plus") == 0|| strcmp(sym[symst], "Minus") == 0) {    //è¯»åŽé¢ä¸€ä¸ªè¯ï¼Œåˆ¤æ–­æ˜¯å¦æ­£ç¡® 
 		strcpy(token, sym[symst++]);
 	}
 	while (strcmp(token, "Plus") == 0 || strcmp(token, "Minus") == 0) {
@@ -350,7 +351,7 @@ int AddExp() {
 			RetNum -= MulExp(); 
 		}
 		if (ret != 0) return ret;
-		if (strcmp(sym[symst], "Plus") == 0|| strcmp(sym[symst], "Minus") == 0) {  //¶ÁºóÃæÒ»¸ö´Ê£¬ÅÐ¶ÏÊÇ·ñÕýÈ· 
+		if (strcmp(sym[symst], "Plus") == 0|| strcmp(sym[symst], "Minus") == 0) {  //è¯»åŽé¢ä¸€ä¸ªè¯ï¼Œåˆ¤æ–­æ˜¯å¦æ­£ç¡® 
 			strcpy(token, sym[symst++]);
 		}
 	}
@@ -359,7 +360,7 @@ int AddExp() {
 int MulExp() {
 	int RetNum = UnaryExp();
 	if (ret != 0) return ret;
-	if (strcmp(sym[symst], "Mult")==0 || strcmp(sym[symst], "Div") == 0 || strcmp(sym[symst], "Surplus") == 0) {  //¶ÁºóÃæÒ»¸ö´Ê£¬ÅÐ¶ÏÊÇ·ñÕýÈ· 
+	if (strcmp(sym[symst], "Mult")==0 || strcmp(sym[symst], "Div") == 0 || strcmp(sym[symst], "Surplus") == 0) {  //è¯»åŽé¢ä¸€ä¸ªè¯ï¼Œåˆ¤æ–­æ˜¯å¦æ­£ç¡® 
 		strcpy(token, sym[symst++]);
 	}
 	while (strcmp(token, "Mult") == 0 || strcmp(token, "Div") == 0 || strcmp(token, "Surplus") == 0) {
@@ -376,7 +377,7 @@ int MulExp() {
 			RetNum %= UnaryExp();
 		}
 		if (ret != 0) return ret;
-		if (strcmp(sym[symst], "Mult")==0 || strcmp(sym[symst], "Div") == 0 || strcmp(sym[symst], "Surplus") == 0) {  //¶ÁºóÃæÒ»¸ö´Ê£¬ÅÐ¶ÏÊÇ·ñÕýÈ· 
+		if (strcmp(sym[symst], "Mult")==0 || strcmp(sym[symst], "Div") == 0 || strcmp(sym[symst], "Surplus") == 0) {  //è¯»åŽé¢ä¸€ä¸ªè¯ï¼Œåˆ¤æ–­æ˜¯å¦æ­£ç¡® 
 			strcpy(token, sym[symst++]);
 		}
 	}
@@ -387,7 +388,7 @@ int UnaryExp() {
 	//UnaryOp() 
 	if (strcmp(token, "Plus") == 0 || strcmp(token, "Minus") == 0) {
 		int PositiveNum=1;
-		if (strcmp(token, "Plus") == 0) {        //¶àÓàÒ»¸ö+-ºÅ£¬ÔòÒÔ´ËÀ´ÅÐ¶ÏNumberµÄÕý¸º 
+		if (strcmp(token, "Plus") == 0) {        //å¤šä½™ä¸€ä¸ª+-å·ï¼Œåˆ™ä»¥æ­¤æ¥åˆ¤æ–­Numberçš„æ­£è´Ÿ 
 			PositiveNum=PositiveNum;
 		}
 		else {

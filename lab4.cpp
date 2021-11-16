@@ -9,8 +9,8 @@
 #include <vector>
 #include <stack>
 using namespace std;
-char str[1024];
-char token[256];
+char str[3024];
+char token[2560];
 int sst = 0;   //表示句子读的位置 sentenceStart
 int tst = 0;   //表示词读的位置 tokenStart
 int symed = 0; //表示存储符号的词组的最后位置
@@ -154,7 +154,7 @@ int getToken()
 {
 	int note = 0;
 	tst = 0;
-	while (fgets(str, 512, fpin) != NULL)
+	while (fgets(str, 3000, fpin) != NULL)
 	{
 		memset(token, 0, sizeof(token));
 		int iskey = 0;

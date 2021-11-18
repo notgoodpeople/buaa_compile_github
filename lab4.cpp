@@ -11,78 +11,78 @@
 using namespace std;
 char str[3024];
 char token[2560];
-int sst = 0;   //表示句子读的位置 sentenceStart
-int tst = 0;   //表示词读的位置 tokenStart
-int symed = 0; //表示存储符号的词组的最后位置
-int symst = 0; //表示 存储符号的词组的当前读取
+int sst = 0;   //��ʾ���Ӷ���λ�� sentenceStart
+int tst = 0;   //��ʾ�ʶ���λ�� tokenStart
+int symed = 0; //��ʾ�洢���ŵĴ�������λ��
+int symst = 0; //��ʾ �洢���ŵĴ���ĵ�ǰ��ȡ
 char key[9][15] = {"int", "main", "return", "const", "if", "else"};
 char keyOut[9][15] = {"Int", "Main", "Return", "Const", "If", "Else"};
 char funcCall[9][15] = {"getint", "putint", "getch", "putch"};
 char funcCallOut[9][15] = {"Func(getint)", "Func(putint)", "Func(getch)", "Func(putch)"};
 struct symType
-{ //正在分析的词
+{ //���ڷ����Ĵ�
 	string name;
-	/*类型：1~10 为关键字：int，main，return，const，if，else
-		11~20为函数调用：getint putint getch putch
+	/*���ͣ�1~10 Ϊ�ؼ��֣�int��main��return��const��if��else
+		11~20Ϊ�������ã�getint putint getch putch
 		21 Number 22 Ident
-		51~ 符号 51 == 52 = 53 , 54 ; 55 ( 56 ) 57 { 58 } 59 + 60 *
+		51~ ���� 51 == 52 = 53 , 54 ; 55 ( 56 ) 57 { 58 } 59 + 60 *
 				61 / 62 - 63 % 64 < 65 > 66 || 67 && 68 != 69 <= 70 >=
 				71 !
 	*/
-	int value; //如果是number类  会储存int型的值
+	int value; //�����number��  �ᴢ��int�͵�ֵ
 	int type;
 } sym[1005];
 struct symType symNow;
-int ret = 0;		//程序出错的返回值
-int tempRetNum = 0; //EXP()式子中的临时返回值
+int ret = 0;		//��������ķ���ֵ
+int tempRetNum = 0; //EXP()ʽ���е���ʱ����ֵ
 struct ExpElem
 {
-	int type; //1 Exp中的数字，2 运算符，3 寄存器，4 UnaryOp, 5 比较符号
+	int type; //1 Exp�е����֣�2 �������3 �Ĵ�����4 UnaryOp, 5 �ȽϷ���
 	/* 
-	1：数字的值
-	2：1加法，2减法，3乘法，4除法，5取余, 6 &&, 7 ||
-	3：寄存器的标号
-	4：1正号 2负号 3 Not
+	1�����ֵ�ֵ
+	2��1�ӷ���2������3�˷���4������5ȡ��, 6 &&, 7 ||
+	3���Ĵ����ı��
+	4��1���� 2���� 3 Not
 	5: 1 == 2 != 3 < 4 > 5<= 6>=
 	*/
 	int value;
-	int value_1; //i1时的值，仅在type=3时使用
+	int value_1; //i1ʱ��ֵ������type=3ʱʹ��
 };
 struct ExpElem *tempExpStack;
-stack<struct ExpElem> ExpStack; //用于生成计算值LLVM IR的栈
+stack<struct ExpElem> ExpStack; //�������ɼ���ֵLLVM IR��ջ
 bool VarInInit = false;
 bool LvalIsConst = false;
 struct VarItem
 {
-	bool isConst;	 //是否是常量
-	int registerNum; //寄存器的号码
+	bool isConst;	 //�Ƿ��ǳ���
+	int registerNum; //�Ĵ����ĺ���
 };
-map<string, struct VarItem>::iterator varIt; //Varmap变量迭代器
+map<string, struct VarItem>::iterator varIt; //Varmap����������
 map<string, struct VarItem> VarMap;
-int VarMapSt = 0; //当前新寄存器的值
-// struct CondBlock{       //条件变量对应的代码块信息
-// 	int registerNum; //寄存器的值
-// 	int type;  //这是个什么类型呢 1 IF 2 Else 3 LOrd 4 LAnd 5 main
-// 	int num;  //在这个类型是第几个
-// 	bool wantB;  //想要上一个条件变量是什么布尔值
+int VarMapSt = 0; //��ǰ�¼Ĵ�����ֵ
+// struct CondBlock{       //����������Ӧ�Ĵ������Ϣ
+// 	int registerNum; //�Ĵ�����ֵ
+// 	int type;  //���Ǹ�ʲô������ 1 IF 2 Else 3 LOrd 4 LAnd 5 main
+// 	int num;  //����������ǵڼ���
+// 	bool wantB;  //��Ҫ��һ������������ʲô����ֵ
 // };
-// map<int, struct CondBlock> CondBlockMap;  //map[type]的num到多少了。
-int condCount = 1; //该是第几个cond块了
+// map<int, struct CondBlock> CondBlockMap;  //map[type]��num�������ˡ�
+int condCount = 1; //���ǵڼ���cond����
 bool condHasIcmp = false;
 stack<int> condCountFalseStack;
 stack<int> condCountTrueStack;
-map<bool, int> condCountMap; //没有用到，用bool值来判断条件变量块的编号
+map<bool, int> condCountMap; //û���õ�����boolֵ���ж�����������ı��
 
-int mainCount = 1; //准备从条件语句回到主函数里面，主函数的Count
+int mainCount = 1; //׼�����������ص����������棬��������Count
 struct FuncItem
 {
-	int RetType;		//函数返回类型 1为int 0为void
-	vector<int> params; //函数参数列表
-	string funcName;	//LLVM IR中的函数名
-	int paramsNum;		//函数参数个数
+	int RetType;		//������������ 1Ϊint 0Ϊvoid
+	vector<int> params; //���������б�
+	string funcName;	//LLVM IR�еĺ�����
+	int paramsNum;		//������������
 };
 map<string, struct FuncItem> FuncMap;
-map<string, struct FuncItem>::iterator funcIt; //Funcmap变量迭代器
+map<string, struct FuncItem>::iterator funcIt; //Funcmap����������
 int LVal();
 int getToken();
 int CompUnit();
@@ -146,9 +146,9 @@ int main(int argc, char *argv[])
 	return 0;
 }
 
-//进制转换
+//����ת��
 void ChangeTen(int n, char str[])
-{ //将n进制数转换成10进制数
+{ //��n������ת����10������
 	int len = strlen(str), i, sum = 0, t = 1;
 	for (i = len - 1; i >= 0; i--)
 	{
@@ -170,13 +170,13 @@ void ChangeTen(int n, char str[])
 	sym[symed].name = "Number";
 	sym[symed++].type = 21;
 }
-//在表达式计算，Exp()类函数时 使用该函数报错
+//�ڱ���ʽ���㣬Exp()�ຯ��ʱ ʹ�øú�������
 void error()
 {
 	ret = 120;
 	printf("\nExp() error");
 }
-//词法分析
+//�ʷ�����
 int getToken()
 {
 	int note = 0;
@@ -214,7 +214,7 @@ int getToken()
 				note = 1;
 				sst++;
 			}
-			//Ident或者关键字
+			//Ident���߹ؼ���
 			else if ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || ch == '_')
 			{
 				token[tst++] = ch;
@@ -235,7 +235,7 @@ int getToken()
 				}
 				token[tst] = '\0';
 				tst = 0;
-				//判断是否是关键字
+				//�ж��Ƿ��ǹؼ���
 				for (int i = 0; i <= 5; i++)
 				{
 					if (strcmp(token, key[i]) == 0)
@@ -245,7 +245,7 @@ int getToken()
 						iskey = 1;
 					}
 				}
-				//判断是否是调用函数
+				//�ж��Ƿ��ǵ��ú���
 				for (int i = 0; i <= 3; i++)
 				{
 					if (strcmp(token, funcCall[i]) == 0)
@@ -261,7 +261,7 @@ int getToken()
 					sym[symed++].type = 22;
 				}
 			}
-			//Number类
+			//Number��
 			else if (ch >= '0' && ch <= '9')
 			{
 				if (ch != '0')
@@ -279,7 +279,7 @@ int getToken()
 				}
 				else
 				{
-					//16进制
+					//16����
 					if (str[sst + 1] == 'x' || str[sst + 1] == 'X')
 					{
 						sst++;
@@ -297,13 +297,13 @@ int getToken()
 							tst = 0;
 							ChangeTen(16, token);
 						}
-						//16进制Number出错
+						//16����Number����
 						else
 						{
 							return 16;
 						}
 					}
-					//8进制
+					//8����
 					else
 					{
 						if (str[sst + 1] >= '0' && str[sst + 1] <= '8')
@@ -499,7 +499,7 @@ int getToken()
 	}
 	return 0;
 }
-//初始化函数调用
+//��ʼ����������
 void initFunc()
 {
 	//int getint();
@@ -547,7 +547,7 @@ void initFunc()
 	//void putarray(int, int[]);
 	//fprintf(fpout,"declare i32 @getint()\n");
 }
-//初始化条件变量的命名
+//��ʼ����������������
 // void initCond(){
 // 	CondBlockMap[1].num = 1;
 // 	CondBlockMap[2].num = 1;
@@ -555,7 +555,7 @@ void initFunc()
 // 	CondBlockMap[4].num = 1;
 // 	CondBlockMap[5].num = 1;
 // }
-//语法分析
+//�﷨����
 int CompUnit()
 {
 	initFunc();
@@ -587,7 +587,7 @@ int Decl()
 }
 int ConstDecl()
 {
-	//const在Decl()中已经检测
+	//const��Decl()���Ѿ����
 
 	ret = Btype();
 	if (ret != 0)
@@ -814,7 +814,7 @@ int FuncType()
 	return 0;
 }
 int Ident()
-{ //只用于FuncDef
+{ //ֻ����FuncDef
 	if (symNow.type == 2)
 	{
 		fprintf(fpout, "@main");
@@ -943,7 +943,7 @@ int Stmt()
 		return 0;
 	}
 	else if (symNow.type == 5)
-	{ //条件语句
+	{ //�������
 		symNow = sym[symst++];
 		if (symNow.type != 55)
 		{
@@ -953,7 +953,7 @@ int Stmt()
 		symNow = sym[symst++];
 		Cond();
 		tempExpStack = &ExpStack.top();
-		fprintf(fpout, "    br i1 %%%d, label %%%d_t, label %%%d_f\n\n", tempExpStack->value, condCount, (condCount + 1));
+		fprintf(fpout, "    br i1 %%%d, label %%t_%d, label %%f_%d\n\n", tempExpStack->value, condCount, (condCount + 1));
 		condCountMap[true] = condCount;
 		condCountTrueStack.push(condCount);
 		condCountMap[false] = condCount + 1;
@@ -970,9 +970,9 @@ int Stmt()
 		//fprintf(fpout,"Stmt If \n");
 		int tem = condCountTrueStack.top();
 		condCountTrueStack.pop();
-		fprintf(fpout, "%d_t:\n", tem);
+		fprintf(fpout, "t_%d:\n", tem);
 		Stmt();
-		fprintf(fpout, "    br label %%%d_m\n", mainCount);
+		fprintf(fpout, "    br label %%m_%d\n", mainCount);
 		fprintf(fpout, "\n");
 		if (sym[symst].type == 6)
 		{
@@ -984,26 +984,26 @@ int Stmt()
 			//fprintf(fpout,"Stmt Else \n");
 			int tem = condCountFalseStack.top();
 			condCountFalseStack.pop();
-			fprintf(fpout, "%d_f:\n", tem);
+			fprintf(fpout, "f_%d:\n", tem);
 			Stmt();
-			fprintf(fpout, "    br label %%%d_m\n", mainCount);
+			fprintf(fpout, "    br label %%m_%d\n", mainCount);
 			fprintf(fpout, "\n");
 		}
 		while (!condCountTrueStack.empty())
 		{
 			int tem = condCountTrueStack.top();
 			condCountTrueStack.pop();
-			fprintf(fpout, "%d_t:\n", tem);
-			fprintf(fpout, "    br label %%%d_m\n", mainCount);
+			fprintf(fpout, "t_%d:\n", tem);
+			fprintf(fpout, "    br label %%m_%d\n", mainCount);
 		}
 		while (!condCountFalseStack.empty())
 		{
 			int tem = condCountFalseStack.top();
 			condCountFalseStack.pop();
-			fprintf(fpout, "%d_f:\n", tem);
-			fprintf(fpout, "    br label %%%d_m\n\n", mainCount);
+			fprintf(fpout, "f_%d:\n", tem);
+			fprintf(fpout, "    br label %%m_%d\n\n", mainCount);
 		}
-		fprintf(fpout, "%d_m:\n", mainCount);
+		fprintf(fpout, "m_%d:\n", mainCount);
 		mainCount++;
 		return 0;
 	}
@@ -1050,7 +1050,7 @@ int AddExp()
 	if (ret != 0)
 		return ret;
 	if (sym[symst].type == 59 || sym[symst].type == 62)
-	{ //读后面一个词，判断是否正确
+	{ //������һ���ʣ��ж��Ƿ���ȷ
 		symNow = sym[symst++];
 	}
 	while (symNow.type == 59 || symNow.type == 62)
@@ -1061,14 +1061,14 @@ int AddExp()
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 2;
-			tempExpStack->value = 1; //是加法
+			tempExpStack->value = 1; //�Ǽӷ�
 			ExpStack.push(*tempExpStack);
 		}
 		else
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 2;
-			tempExpStack->value = 2; //是减法
+			tempExpStack->value = 2; //�Ǽ���
 			ExpStack.push(*tempExpStack);
 		}
 		ret = MulExp();
@@ -1076,7 +1076,7 @@ int AddExp()
 			return ret;
 		Operation();
 		if (sym[symst].type == 59 || sym[symst].type == 62)
-		{ //读后面一个词，判断是否正确
+		{ //������һ���ʣ��ж��Ƿ���ȷ
 			symNow = sym[symst++];
 		}
 	}
@@ -1090,7 +1090,7 @@ int MulExp()
 	if (ret != 0)
 		return ret;
 	if (sym[symst].type == 60 || sym[symst].type == 61 || sym[symst].type == 63)
-	{ //读后面一个词，判断是否正确
+	{ //������һ���ʣ��ж��Ƿ���ȷ
 		symNow = sym[symst++];
 	}
 	while (symNow.type == 60 || symNow.type == 61 || symNow.type == 63)
@@ -1101,21 +1101,21 @@ int MulExp()
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 2;
-			tempExpStack->value = 3; //是乘法
+			tempExpStack->value = 3; //�ǳ˷�
 			ExpStack.push(*tempExpStack);
 		}
 		else if (tempSym.type == 61)
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 2;
-			tempExpStack->value = 4; //是除法
+			tempExpStack->value = 4; //�ǳ���
 			ExpStack.push(*tempExpStack);
 		}
 		else
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 2;
-			tempExpStack->value = 5; //是取余
+			tempExpStack->value = 5; //��ȡ��
 			ExpStack.push(*tempExpStack);
 		}
 		RetNum = UnaryExp();
@@ -1123,7 +1123,7 @@ int MulExp()
 			return ret;
 		Operation();
 		if (sym[symst].type == 60 || sym[symst].type == 61 || sym[symst].type == 63)
-		{ //读后面一个词，判断是否正确
+		{ //������һ���ʣ��ж��Ƿ���ȷ
 			symNow = sym[symst++];
 		}
 	}
@@ -1163,24 +1163,24 @@ void UnaryOp()
 	if (symNow.type == 59 || symNow.type == 62 || symNow.type == 71)
 	{
 		if (symNow.type == 59)
-		{ //多余一个+-号，则以此来判断Number的正负
+		{ //����һ��+-�ţ����Դ����ж�Number������
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 4;
-			tempExpStack->value = 1; //是正号
+			tempExpStack->value = 1; //������
 			ExpStack.push(*tempExpStack);
 		}
 		else if (symNow.type == 62)
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 4;
-			tempExpStack->value = 2; //是负号
+			tempExpStack->value = 2; //�Ǹ���
 			ExpStack.push(*tempExpStack);
 		}
 		else
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 4;
-			tempExpStack->value = 3; //是Not,即！
+			tempExpStack->value = 3; //��Not,����
 			ExpStack.push(*tempExpStack);
 		}
 	}
@@ -1232,7 +1232,7 @@ int PrimaryExp()
 }
 int LVal()
 {
-	//检查是否是已经定义的变量
+	//����Ƿ����Ѿ�����ı���
 	bool declared = false;
 	varIt = VarMap.find(symNow.name);
 	if (varIt != VarMap.end())
@@ -1241,14 +1241,14 @@ int LVal()
 	}
 
 	if ((*varIt).second.isConst)
-	{ //这个变量是常量
+	{ //��������ǳ���
 		LvalIsConst = true;
 	}
-	else //这个变量不是常量，如果它在常量的初始化式子中，则非法。
+	else //����������ǳ�����������ڳ����ĳ�ʼ��ʽ���У���Ƿ���
 	{
 		VarInInit = true;
 	}
-	return (*varIt).second.registerNum; //返回寄存器数字
+	return (*varIt).second.registerNum; //���ؼĴ�������
 }
 void Cond()
 {
@@ -1297,7 +1297,7 @@ void LOrExp()
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 2;
-			tempExpStack->value = 7; //是||
+			tempExpStack->value = 7; //��||
 			ExpStack.push(*tempExpStack);
 		}
 		LAndExp();
@@ -1333,7 +1333,7 @@ void LAndExp()
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 2;
-			tempExpStack->value = 6; //是&&
+			tempExpStack->value = 6; //��&&
 			ExpStack.push(*tempExpStack);
 		}
 		EqExp();
@@ -1366,14 +1366,14 @@ void EqExp()
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 5;
-			tempExpStack->value = 1; //是相等
+			tempExpStack->value = 1; //�����
 			ExpStack.push(*tempExpStack);
 		}
 		else
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 5;
-			tempExpStack->value = 2; //是不相等
+			tempExpStack->value = 2; //�ǲ����
 			ExpStack.push(*tempExpStack);
 		}
 		EqExp();
@@ -1396,28 +1396,28 @@ void RelExp()
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 5;
-			tempExpStack->value = 3; //是小于
+			tempExpStack->value = 3; //��С��
 			ExpStack.push(*tempExpStack);
 		}
 		else if (tempSym.type == 65)
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 5;
-			tempExpStack->value = 4; //是大于
+			tempExpStack->value = 4; //�Ǵ���
 			ExpStack.push(*tempExpStack);
 		}
 		else if (tempSym.type == 69)
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 5;
-			tempExpStack->value = 5; //是小于等于
+			tempExpStack->value = 5; //��С�ڵ���
 			ExpStack.push(*tempExpStack);
 		}
 		else
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 5;
-			tempExpStack->value = 6; //是大于等于
+			tempExpStack->value = 6; //�Ǵ��ڵ���
 			ExpStack.push(*tempExpStack);
 		}
 		AddExp();
@@ -1606,7 +1606,7 @@ void OperationUnaryOp()
 	struct ExpElem op = ExpStack.top();
 	ExpStack.pop();
 
-	//已经到正常的加减法了
+	//�Ѿ��������ļӼ�����
 	if (op.type != 4)
 	{
 		ExpStack.push(op);

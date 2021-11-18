@@ -19,30 +19,34 @@ char key[9][15] = {"int", "main", "return", "const", "if", "else"};
 char keyOut[9][15] = {"Int", "Main", "Return", "Const", "If", "Else"};
 char funcCall[9][15] = {"getint", "putint", "getch", "putch"};
 char funcCallOut[9][15] = {"Func(getint)", "Func(putint)", "Func(getch)", "Func(putch)"};
-struct symType{    //正在分析的词
-	string name; 
+struct symType
+{ //正在分析的词
+	string name;
 	/*类型：1~10 为关键字：int，main，return，const，if，else
 		11~20为函数调用：getint putint getch putch
 		21 Number 22 Ident
 		51~ 符号 51 == 52 = 53 , 54 ; 55 ( 56 ) 57 { 58 } 59 + 60 *
-				61 / 62 - 63 % 64 < 65 >
+				61 / 62 - 63 % 64 < 65 > 66 || 67 && 68 != 69 <= 70 >=
+				71 !
 	*/
 	int value; //如果是number类  会储存int型的值
 	int type;
-}sym[1005];
+} sym[1005];
 struct symType symNow;
 int ret = 0;		//程序出错的返回值
 int tempRetNum = 0; //EXP()式子中的临时返回值
 struct ExpElem
 {
-	int type; //1 Exp中的数字，2 运算符，3 寄存器，4 UnaryOp
+	int type; //1 Exp中的数字，2 运算符，3 寄存器，4 UnaryOp, 5 比较符号
 	/* 
 	1：数字的值
-	2：1加法，2减法，3乘法，4除法，5取余
+	2：1加法，2减法，3乘法，4除法，5取余, 6 &&, 7 ||
 	3：寄存器的标号
-	4：1正号 2负号
+	4：1正号 2负号 3 Not
+	5: 1 == 2 != 3 < 4 > 5<= 6>=
 	*/
 	int value;
+	int value_1; //i1时的值，仅在type=3时使用
 };
 struct ExpElem *tempExpStack;
 stack<struct ExpElem> ExpStack; //用于生成计算值LLVM IR的栈
@@ -56,12 +60,26 @@ struct VarItem
 map<string, struct VarItem>::iterator varIt; //Varmap变量迭代器
 map<string, struct VarItem> VarMap;
 int VarMapSt = 0; //当前新寄存器的值
+// struct CondBlock{       //条件变量对应的代码块信息
+// 	int registerNum; //寄存器的值
+// 	int type;  //这是个什么类型呢 1 IF 2 Else 3 LOrd 4 LAnd 5 main
+// 	int num;  //在这个类型是第几个
+// 	bool wantB;  //想要上一个条件变量是什么布尔值
+// };
+// map<int, struct CondBlock> CondBlockMap;  //map[type]的num到多少了。
+int condCount = 1; //该是第几个cond块了
+bool condHasIcmp = false;
+stack<int> condCountFalseStack;
+stack<int> condCountTrueStack;
+map<bool, int> condCountMap; //没有用到，用bool值来判断条件变量块的编号
+
+int mainCount = 1; //准备从条件语句回到主函数里面，主函数的Count
 struct FuncItem
 {
 	int RetType;		//函数返回类型 1为int 0为void
 	vector<int> params; //函数参数列表
 	string funcName;	//LLVM IR中的函数名
-	int paramsNum;     //函数参数个数
+	int paramsNum;		//函数参数个数
 };
 map<string, struct FuncItem> FuncMap;
 map<string, struct FuncItem>::iterator funcIt; //Funcmap变量迭代器
@@ -93,12 +111,18 @@ void Operation();
 void OperationUnaryOp();
 void FuncRParams();
 void FuncCall();
+void Cond();
+void LOrExp();
+void LAndExp();
+void EqExp();
+void RelExp();
+void OperationCond();
 FILE *fpin;
 FILE *fpout;
 int main(int argc, char *argv[])
 {
-	fpout = fopen(argv[2], "w");
-	fpin = fopen(argv[1], "r");
+	fpout = fopen("out.txt", "w");
+	fpin = fopen("in.txt", "r");
 	if (fpin == NULL)
 	{
 		printf("fpin error");
@@ -107,13 +131,16 @@ int main(int argc, char *argv[])
 	{
 		printf("fpout error");
 	}
-	try{
+	try
+	{
 		getToken();
 		symNow = sym[symst++];
 		ret = CompUnit();
 		if (ret != 0)
 			return ret;
-	}catch(...){
+	}
+	catch (...)
+	{
 		return 998;
 	}
 	return 0;
@@ -194,12 +221,14 @@ int getToken()
 				ch = str[++sst];
 				while ((ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || ch == '_' || ch == '\n')
 				{
-					if(ch == '\n'){
+					if (ch == '\n')
+					{
 						fgets(str, 2000, fpin);
-						sst=-1;
+						sst = -1;
 						ch = str[++sst];
 					}
-					else{
+					else
+					{
 						token[tst++] = ch;
 						ch = str[++sst];
 					}
@@ -212,7 +241,7 @@ int getToken()
 					if (strcmp(token, key[i]) == 0)
 					{
 						sym[symed].name = keyOut[i];
-						sym[symed++].type = i+1;
+						sym[symed++].type = i + 1;
 						iskey = 1;
 					}
 				}
@@ -222,7 +251,7 @@ int getToken()
 					if (strcmp(token, funcCall[i]) == 0)
 					{
 						sym[symed].name = funcCallOut[i];
-						sym[symed++].type = i+11;
+						sym[symed++].type = i + 11;
 						iskey = 1;
 					}
 				}
@@ -329,7 +358,7 @@ int getToken()
 				sst++;
 			}
 			else if (ch == '(')
-			{	
+			{
 				sym[symed].name = "LPar";
 				sym[symed++].type = 55;
 				sst++;
@@ -382,15 +411,81 @@ int getToken()
 				sym[symed++].type = 63;
 				sst++;
 			}
-			else if(ch=='<'){
-				sym[symed].name = "Lt";
-				sym[symed++].type = 64;
-				sst++;
+			else if (ch == '<')
+			{
+				if (str[++sst] == '=')
+				{
+					sym[symed].name = "ELt";
+					sym[symed++].type = 69;
+					sst++;
+				}
+				else
+				{
+					sym[symed].name = "Lt";
+					sym[symed++].type = 64;
+					sst++;
+					sst--;
+				}
 			}
-			else if(ch=='>'){
-				sym[symed].name = "Gt";
-				sym[symed++].type = 65;
-				sst++;
+			else if (ch == '>')
+			{
+				if (str[++sst] == '=')
+				{
+					sym[symed].name = "EGt";
+					sym[symed++].type = 70;
+					sst++;
+				}
+				else
+				{
+					sym[symed].name = "Gt";
+					sym[symed++].type = 65;
+					sst++;
+					sst--;
+				}
+			}
+			else if (ch == '|')
+			{
+				if (str[++sst] == '|')
+				{
+					sym[symed].name = "Or";
+					sym[symed++].type = 66;
+					sst++;
+				}
+				else
+				{
+					printf("err in getToken() ||");
+					throw "Error";
+				}
+			}
+			else if (ch == '&')
+			{
+				if (str[++sst] == '&')
+				{
+					sym[symed].name = "And";
+					sym[symed++].type = 67;
+					sst++;
+				}
+				else
+				{
+					printf("err in getToken() ||");
+					throw "Error";
+				}
+			}
+			else if (ch == '!')
+			{
+				if (str[++sst] == '=')
+				{
+					sym[symed].name = "NEq";
+					sym[symed++].type = 68;
+					sst++;
+				}
+				else
+				{
+					sym[symed].name = "Not";
+					sym[symed++].type = 71;
+					sst--;
+					sst++;
+				}
 			}
 			else
 			{
@@ -452,16 +547,25 @@ void initFunc()
 	//void putarray(int, int[]);
 	//fprintf(fpout,"declare i32 @getint()\n");
 }
+//初始化条件变量的命名
+// void initCond(){
+// 	CondBlockMap[1].num = 1;
+// 	CondBlockMap[2].num = 1;
+// 	CondBlockMap[3].num = 1;
+// 	CondBlockMap[4].num = 1;
+// 	CondBlockMap[5].num = 1;
+// }
 //语法分析
 int CompUnit()
 {
 	initFunc();
+	//initCond();
 	fprintf(fpout, "define dso_local ");
 	ret = FuncDef();
 	if (ret != 0)
 		throw "Error";
 	symNow = sym[symst++];
-	if (symst!=symed+1)
+	if (symst != symed + 1)
 	{
 		printf("error in CompUnit");
 		throw "Error";
@@ -571,7 +675,8 @@ int ConstInitVal()
 {
 	VarInInit = false;
 	ConstExp();
-	if(VarInInit){
+	if (VarInInit)
+	{
 		throw "Error";
 	}
 	return 0;
@@ -690,9 +795,10 @@ int FuncDef()
 		printf("error in FuncDef ')'");
 		throw "Error";
 	}
-	fprintf(fpout, ")");
+	fprintf(fpout, ") {");
 	symNow = sym[symst++];
 	ret = Block();
+	fprintf(fpout, "}");
 	if (ret != 0)
 		return ret;
 	return 0;
@@ -708,7 +814,7 @@ int FuncType()
 	return 0;
 }
 int Ident()
-{   //只用于FuncDef
+{ //只用于FuncDef
 	if (symNow.type == 2)
 	{
 		fprintf(fpout, "@main");
@@ -731,16 +837,14 @@ int Block()
 		printf("error in Block '{'");
 		throw "Error";
 	}
-	fprintf(fpout, "{\n");
+	fprintf(fpout, "\n");
 	symNow = sym[symst++];
-	while (symNow.type == 4 || symNow.type == 1 || \
-	symNow.type == 3 || symNow.type == 54 || \
-	symNow.type == 22||\
-	(symNow.type>=11&&symNow.type<=20))
+	while (symNow.type == 4 || symNow.type == 1 ||
+		   symNow.type == 3 || symNow.type == 54 ||
+		   symNow.type == 22 || symNow.type == 5 ||
+		   (symNow.type >= 11 && symNow.type <= 20))
 	{
 		ret = BlockItem();
-		if (ret != 0)
-			return ret;
 		symNow = sym[symst++];
 	}
 	if (symNow.type != 58)
@@ -748,7 +852,7 @@ int Block()
 		printf("error in Block '}'");
 		throw "Error";
 	}
-	fprintf(fpout, "}");
+	//fprintf(fpout, "\n");
 	return 0;
 }
 int BlockItem()
@@ -803,7 +907,8 @@ int Stmt()
 	{
 		LvalIsConst = false;
 		int retRegister = LVal();
-		if(LvalIsConst){
+		if (LvalIsConst)
+		{
 			throw "Error";
 		}
 		symNow = sym[symst++];
@@ -837,13 +942,85 @@ int Stmt()
 		}
 		return 0;
 	}
-//	else if{   //条件语句
-
-//	}
+	else if (symNow.type == 5)
+	{ //条件语句
+		symNow = sym[symst++];
+		if (symNow.type != 55)
+		{
+			printf("error in Stmt (");
+			throw "Error";
+		}
+		symNow = sym[symst++];
+		Cond();
+		tempExpStack = &ExpStack.top();
+		fprintf(fpout, "    br i1 %%%d, label %%%d_t, label %%%d_f\n\n", tempExpStack->value, condCount, (condCount + 1));
+		condCountMap[true] = condCount;
+		condCountTrueStack.push(condCount);
+		condCountMap[false] = condCount + 1;
+		condCountFalseStack.push(condCount + 1);
+		condCount += 2;
+		// fprintf(fpout,"\n");
+		symNow = sym[symst++];
+		if (symNow.type != 56)
+		{
+			printf("error in Stmt )");
+			throw "Error";
+		}
+		symNow = sym[symst++];
+		//fprintf(fpout,"Stmt If \n");
+		int tem = condCountTrueStack.top();
+		condCountTrueStack.pop();
+		fprintf(fpout, "%d_t:\n", tem);
+		Stmt();
+		fprintf(fpout, "    br label %%%d_m\n", mainCount);
+		fprintf(fpout, "\n");
+		if (sym[symst].type == 6)
+		{
+			symNow = sym[symst++];
+		}
+		if (symNow.type == 6)
+		{
+			symNow = sym[symst++];
+			//fprintf(fpout,"Stmt Else \n");
+			int tem = condCountFalseStack.top();
+			condCountFalseStack.pop();
+			fprintf(fpout, "%d_f:\n", tem);
+			Stmt();
+			fprintf(fpout, "    br label %%%d_m\n", mainCount);
+			fprintf(fpout, "\n");
+		}
+		while (!condCountTrueStack.empty())
+		{
+			int tem = condCountTrueStack.top();
+			condCountTrueStack.pop();
+			fprintf(fpout, "%d_t:\n", tem);
+			fprintf(fpout, "    br label %%%d_m\n", mainCount);
+		}
+		while (!condCountFalseStack.empty())
+		{
+			int tem = condCountFalseStack.top();
+			condCountFalseStack.pop();
+			fprintf(fpout, "%d_f:\n", tem);
+			fprintf(fpout, "    br label %%%d_m\n\n", mainCount);
+		}
+		fprintf(fpout, "%d_m:\n", mainCount);
+		mainCount++;
+		return 0;
+	}
+	else if (symNow.type == 57)
+	{ //Block
+		Block();
+	}
 	else
-	{ //待修改
+	{
 		Exp();
 		//ExpStack.pop();
+		symNow = sym[symst++];
+		if (symNow.type != 54)
+		{
+			printf("error in Stmt ';'");
+			throw "Error";
+		}
 	}
 	/*
 	if(token[0]=='N'&&token[1]=='u'&&token[4]=='e'&&token[5]=='r'){
@@ -955,7 +1132,7 @@ int MulExp()
 int UnaryExp()
 {
 	//UnaryOp()
-	if (symNow.type == 59 || symNow.type == 62)
+	if (symNow.type == 59 || symNow.type == 62 || symNow.type == 71)
 	{
 		UnaryOp();
 		symNow = sym[symst++];
@@ -963,7 +1140,7 @@ int UnaryExp()
 
 		OperationUnaryOp();
 	}
-	else if (symNow.type>=11&&symNow.type<=20)
+	else if (symNow.type >= 11 && symNow.type <= 20)
 	{
 		FuncCall();
 	}
@@ -983,7 +1160,7 @@ int UnaryExp()
 }
 void UnaryOp()
 {
-	if (symNow.type == 59 || symNow.type == 62)
+	if (symNow.type == 59 || symNow.type == 62 || symNow.type == 71)
 	{
 		if (symNow.type == 59)
 		{ //多余一个+-号，则以此来判断Number的正负
@@ -992,11 +1169,18 @@ void UnaryOp()
 			tempExpStack->value = 1; //是正号
 			ExpStack.push(*tempExpStack);
 		}
-		else
+		else if (symNow.type == 62)
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 4;
 			tempExpStack->value = 2; //是负号
+			ExpStack.push(*tempExpStack);
+		}
+		else
+		{
+			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
+			tempExpStack->type = 4;
+			tempExpStack->value = 3; //是Not,即！
 			ExpStack.push(*tempExpStack);
 		}
 	}
@@ -1057,14 +1241,191 @@ int LVal()
 	}
 
 	if ((*varIt).second.isConst)
-	{     //这个变量是常量
+	{ //这个变量是常量
 		LvalIsConst = true;
 	}
-	else   //这个变量不是常量，如果它在常量的初始化式子中，则非法。
+	else //这个变量不是常量，如果它在常量的初始化式子中，则非法。
 	{
 		VarInInit = true;
 	}
 	return (*varIt).second.registerNum; //返回寄存器数字
+}
+void Cond()
+{
+	condHasIcmp = false;
+	LOrExp();
+	if (!condHasIcmp)
+	{
+		struct ExpElem num = ExpStack.top();
+		ExpStack.pop();
+		if (num.type != 1 && num.type != 3)
+		{
+			printf("error in Cond");
+			throw "Error";
+		}
+
+		if (ExpStack.empty())
+		{
+			ExpStack.push(num);
+			return;
+		}
+
+		if (num.type == 1)
+		{
+			fprintf(fpout, "    %%%d = icmp ne i32 %d, 0\n", ++VarMapSt, num.value);
+		}
+		else
+		{
+			fprintf(fpout, "    %%%d = icmp ne i32 %%%d, 0\n", ++VarMapSt, num.value);
+		}
+		num.value = VarMapSt;
+		num.type = 3;
+		ExpStack.push(num);
+		tempExpStack = &ExpStack.top();
+	}
+}
+void LOrExp()
+{
+	LAndExp();
+	if (sym[symst].type == 66)
+		symNow = sym[symst++];
+	while (symNow.type == 66)
+	{
+		struct symType tempSym = symNow;
+		symNow = sym[symst++];
+		if (tempSym.type == 66)
+		{
+			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
+			tempExpStack->type = 2;
+			tempExpStack->value = 7; //是||
+			ExpStack.push(*tempExpStack);
+		}
+		LAndExp();
+		Operation();
+		//fprintf(fpout,"block LOrd\n ");
+		// int tem = condCountFalseStack.top();
+		// condCountFalseStack.pop();
+		// fprintf(fpout,"%d_f:\n", tem);
+		// LAndExp();
+		// if(!condCountFalseStack.empty()){
+		// 	int tem2 = condCountFalseStack.top();
+		// 	condCountFalseStack.pop();
+		// 	int tem3 = condCountFalseStack.top();
+		// 	fprintf(fpout,"%d_f:\n", tem2);
+		// 	fprintf(fpout,"    br label %%%d_f\n",tem3);
+		// }
+		if (sym[symst].type == 66)
+			symNow = sym[symst++];
+	}
+	return;
+}
+void LAndExp()
+{
+	EqExp();
+	if (sym[symst].type == 67)
+		symNow = sym[symst++];
+	while (symNow.type == 67)
+	{
+		struct symType tempSym = symNow;
+		symNow = sym[symst++];
+		//fprintf(fpout,"block LAnd\n ");
+		if (tempSym.type == 67)
+		{
+			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
+			tempExpStack->type = 2;
+			tempExpStack->value = 6; //是&&
+			ExpStack.push(*tempExpStack);
+		}
+		EqExp();
+		Operation();
+		// int tem = condCountTrueStack.top();
+		// condCountTrueStack.pop();
+		// fprintf(fpout,"%d_t:\n", tem);
+		// EqExp();
+		// if(!condCountTrueStack.empty()){
+		// 	int tem2 = condCountTrueStack.top();
+		// 	condCountTrueStack.pop();
+		// 	int tem3 = condCountTrueStack.top();
+		// 	fprintf(fpout,"%d_t:\n", tem2);
+		// 	fprintf(fpout,"    br label %%%d_t\n",tem3);
+		// }
+		if (sym[symst].type == 67)
+			symNow = sym[symst++];
+	}
+}
+void EqExp()
+{
+	RelExp();
+	if (sym[symst].type == 51 || sym[symst].type == 68)
+		symNow = sym[symst++];
+	while (symNow.type == 51 || symNow.type == 68)
+	{
+		struct symType tempSym = symNow;
+		symNow = sym[symst++];
+		if (tempSym.type == 51)
+		{
+			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
+			tempExpStack->type = 5;
+			tempExpStack->value = 1; //是相等
+			ExpStack.push(*tempExpStack);
+		}
+		else
+		{
+			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
+			tempExpStack->type = 5;
+			tempExpStack->value = 2; //是不相等
+			ExpStack.push(*tempExpStack);
+		}
+		EqExp();
+		OperationCond();
+		condHasIcmp = true;
+		if (sym[symst].type == 51 || sym[symst].type == 68)
+			symNow = sym[symst++];
+	}
+}
+void RelExp()
+{
+	AddExp();
+	if (sym[symst].type == 64 || sym[symst].type == 65 || sym[symst].type == 69 || sym[symst].type == 70)
+		symNow = sym[symst++];
+	while (symNow.type == 64 || symNow.type == 65 || symNow.type == 69 || symNow.type == 70)
+	{
+		struct symType tempSym = symNow;
+		symNow = sym[symst++];
+		if (tempSym.type == 64)
+		{
+			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
+			tempExpStack->type = 5;
+			tempExpStack->value = 3; //是小于
+			ExpStack.push(*tempExpStack);
+		}
+		else if (tempSym.type == 65)
+		{
+			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
+			tempExpStack->type = 5;
+			tempExpStack->value = 4; //是大于
+			ExpStack.push(*tempExpStack);
+		}
+		else if (tempSym.type == 69)
+		{
+			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
+			tempExpStack->type = 5;
+			tempExpStack->value = 5; //是小于等于
+			ExpStack.push(*tempExpStack);
+		}
+		else
+		{
+			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
+			tempExpStack->type = 5;
+			tempExpStack->value = 6; //是大于等于
+			ExpStack.push(*tempExpStack);
+		}
+		AddExp();
+		OperationCond();
+		condHasIcmp = true;
+		if (sym[symst].type == 64 || sym[symst].type == 65 || sym[symst].type == 69 || sym[symst].type == 70)
+			symNow = sym[symst++];
+	}
 }
 void FuncCall()
 {
@@ -1201,6 +1562,12 @@ void Operation()
 	case 5:
 		fprintf(fpout, "srem i32 ");
 		break;
+	case 6:
+		fprintf(fpout, "and i1 ");
+		break;
+	case 7:
+		fprintf(fpout, "or i1 ");
+		break;
 	}
 	if (num1.type == 1)
 	{
@@ -1259,7 +1626,99 @@ void OperationUnaryOp()
 		num.type = 3;
 		num.value = VarMapSt;
 	}
+	else if (op.value == 3)
+	{
+		if (num.type == 1)
+		{
+			fprintf(fpout, "    %%%d = icmp eq i32 %d, 0\n", ++VarMapSt, num.value);
+		}
+		else
+		{
+			fprintf(fpout, "    %%%d = icmp eq i32 %%%d, 0\n", ++VarMapSt, num.value);
+		}
+		num.value = VarMapSt;
+		fprintf(fpout, "    %%%d = zext i1 %%%d to i32\n", ++VarMapSt, num.value);
+		num.type = 3;
+		num.value_1 = num.value;
+		num.value = VarMapSt;
+	}
 	ExpStack.push(num);
 	tempExpStack = &ExpStack.top();
 }
+void OperationCond()
+{
+	struct ExpElem num1, op, num2;
+	num2 = ExpStack.top();
+	if (num2.type != 1 && num2.type != 3)
+	{
+		printf("errro in Operation");
+		throw "Error";
+	}
+	ExpStack.pop();
+	op = ExpStack.top();
+	if (op.type != 5)
+	{
+		printf("errro in OperationCond");
+		throw "Error";
+	}
+	ExpStack.pop();
+	num1 = ExpStack.top();
+	if (num1.type != 1 && num1.type != 3)
+	{
+		printf("error in Operation");
+		throw "Error";
+	}
+	ExpStack.pop();
 
+	tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
+	tempExpStack->type = 3;
+	tempExpStack->value = ++VarMapSt;
+	ExpStack.push(*tempExpStack);
+
+	fprintf(fpout, "    %%%d = ", tempExpStack->value);
+	switch (op.value)
+	{
+	case 1:
+		fprintf(fpout, "icmp eq i32 ");
+		break;
+	case 2:
+		fprintf(fpout, "icmp ne i32 ");
+		break;
+	case 3:
+		fprintf(fpout, "icmp lt i32 ");
+		break;
+	case 4:
+		fprintf(fpout, "icmp gt i32 ");
+		break;
+	case 5:
+		fprintf(fpout, "icmp sle i32 ");
+		break;
+	case 6:
+		fprintf(fpout, "icmp ge i32 ");
+		break;
+	}
+	if (num1.type == 1)
+	{
+		fprintf(fpout, "%d,", num1.value);
+	}
+	else
+	{
+		fprintf(fpout, "%%%d,", num1.value);
+	}
+	if (num2.type == 1)
+	{
+		fprintf(fpout, " %d", num2.value);
+	}
+	else
+	{
+		fprintf(fpout, " %%%d", num2.value);
+	}
+	fprintf(fpout, "\n");
+	// fprintf(fpout,"    br i1 %%%d, label %%%d_t, label %%%d_f\n",tempExpStack->value,condCount,(condCount+1));
+	// condCountMap[true] = condCount;
+	// condCountTrueStack.push(condCount);
+	// condCountMap[false] = condCount+1;
+	// condCountFalseStack.push(condCount+1);
+	// condCount+=2;
+	// fprintf(fpout,"\n");
+}

@@ -14,7 +14,7 @@ char token[2560];
 int sst = 0;   //��ʾ���Ӷ���λ�� sentenceStart
 int tst = 0;   //��ʾ�ʶ���λ�� tokenStart
 int symed = 0; //��ʾ�洢���ŵĴ�������λ��
-int symst = 0; //��ʾ �洢���ŵĴ���ĵ�ǰ��ȡ
+int symst = 0; //��ʾ �洢���ŵĴ���ĵ�ǰ���?
 char key[9][15] = {"int", "main", "return", "const", "if", "else"};
 char keyOut[9][15] = {"Int", "Main", "Return", "Const", "If", "Else"};
 char funcCall[9][15] = {"getint", "putint", "getch", "putch"};
@@ -33,15 +33,15 @@ struct symType
 	int type;
 } sym[1005];
 struct symType symNow;
-int ret = 0;		//��������ķ���ֵ
+int ret = 0;		//��������ķ����?
 int tempRetNum = 0; //EXP()ʽ���е���ʱ����ֵ
 struct ExpElem
 {
-	int type; //1 Exp�е����֣�2 �������3 �Ĵ�����4 UnaryOp, 5 �ȽϷ���
+	int type; //1 Exp�е����֣�2 �������?3 �Ĵ�����4 UnaryOp, 5 �ȽϷ���
 	/* 
 	1�����ֵ�ֵ
 	2��1�ӷ���2������3�˷���4������5ȡ��, 6 &&, 7 ||
-	3���Ĵ����ı��
+	3���Ĵ����ı��?
 	4��1���� 2���� 3 Not
 	5: 1 == 2 != 3 < 4 > 5<= 6>=
 	*/
@@ -60,10 +60,10 @@ struct VarItem
 map<string, struct VarItem>::iterator varIt; //Varmap����������
 map<string, struct VarItem> VarMap;
 int VarMapSt = 0; //��ǰ�¼Ĵ�����ֵ
-// struct CondBlock{       //����������Ӧ�Ĵ������Ϣ
+// struct CondBlock{       //����������Ӧ�Ĵ�������?
 // 	int registerNum; //�Ĵ�����ֵ
 // 	int type;  //���Ǹ�ʲô������ 1 IF 2 Else 3 LOrd 4 LAnd 5 main
-// 	int num;  //����������ǵڼ���
+// 	int num;  //����������ǵڼ���?
 // 	bool wantB;  //��Ҫ��һ������������ʲô����ֵ
 // };
 // map<int, struct CondBlock> CondBlockMap;  //map[type]��num�������ˡ�
@@ -184,7 +184,6 @@ int getToken()
 	while (fgets(str, 3000, fpin) != NULL)
 	{
 		memset(token, 0, sizeof(token));
-		printf("%s\n",str);
 		int iskey = 0;
 		sst = 0;
 		while (sst < strlen(str))
@@ -588,7 +587,7 @@ int Decl()
 }
 int ConstDecl()
 {
-	//const��Decl()���Ѿ����
+	//const��Decl()���Ѿ����?
 
 	ret = Btype();
 	if (ret != 0)
@@ -944,7 +943,7 @@ int Stmt()
 		return 0;
 	}
 	else if (symNow.type == 5)
-	{ //�������
+	{ //�������?
 		symNow = sym[symst++];
 		if (symNow.type != 55)
 		{
@@ -1242,10 +1241,10 @@ int LVal()
 	}
 
 	if ((*varIt).second.isConst)
-	{ //��������ǳ���
+	{ //��������ǳ���?
 		LvalIsConst = true;
 	}
-	else //����������ǳ�����������ڳ����ĳ�ʼ��ʽ���У���Ƿ���
+	else //����������ǳ�����������ڳ����ĳ�ʼ��ʽ���У���Ƿ���?
 	{
 		VarInInit = true;
 	}
@@ -1367,14 +1366,14 @@ void EqExp()
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 5;
-			tempExpStack->value = 1; //�����
+			tempExpStack->value = 1; //�����?
 			ExpStack.push(*tempExpStack);
 		}
 		else
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 5;
-			tempExpStack->value = 2; //�ǲ����
+			tempExpStack->value = 2; //�ǲ����?
 			ExpStack.push(*tempExpStack);
 		}
 		EqExp();
@@ -1443,8 +1442,8 @@ void FuncCall()
 		throw "Error";
 	}
 	symNow = sym[symst++];
-	if (symNow.type != 55)
-	{
+	// if (symNow.type != 55)
+	// {
 		int paramsNum = (*funcIt).second.paramsNum;
 		while (paramsNum > 0)
 		{
@@ -1460,7 +1459,7 @@ void FuncCall()
 			}
 			symNow = sym[symst++];
 		}
-	}
+	//}
 
 	if (symNow.type != 56)
 	{

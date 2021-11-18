@@ -11,78 +11,78 @@
 using namespace std;
 char str[3024];
 char token[2560];
-int sst = 0;   //��ʾ���Ӷ���λ�� sentenceStart
-int tst = 0;   //��ʾ�ʶ���λ�� tokenStart
-int symed = 0; //��ʾ�洢���ŵĴ�������λ��
-int symst = 0; //��ʾ �洢���ŵĴ���ĵ�ǰ���?
+int sst = 0;   //??????????��?? sentenceStart
+int tst = 0;   //????????��?? tokenStart
+int symed = 0; //????��????????????��??
+int symst = 0; //??? ?��??????????????
 char key[9][15] = {"int", "main", "return", "const", "if", "else"};
 char keyOut[9][15] = {"Int", "Main", "Return", "Const", "If", "Else"};
 char funcCall[9][15] = {"getint", "putint", "getch", "putch"};
 char funcCallOut[9][15] = {"Func(getint)", "Func(putint)", "Func(getch)", "Func(putch)"};
 struct symType
-{ //���ڷ����Ĵ�
+{ //??????????
 	string name;
-	/*���ͣ�1~10 Ϊ�ؼ��֣�int��main��return��const��if��else
-		11~20Ϊ�������ã�getint putint getch putch
+	/*?????1~10 ???????int??main??return??const??if??else
+		11~20??????????getint putint getch putch
 		21 Number 22 Ident
-		51~ ���� 51 == 52 = 53 , 54 ; 55 ( 56 ) 57 { 58 } 59 + 60 *
+		51~ ???? 51 == 52 = 53 , 54 ; 55 ( 56 ) 57 { 58 } 59 + 60 *
 				61 / 62 - 63 % 64 < 65 > 66 || 67 && 68 != 69 <= 70 >=
 				71 !
 	*/
-	int value; //�����number��  �ᴢ��int�͵�ֵ
+	int value; //?????number??  ????int????
 	int type;
 } sym[1005];
 struct symType symNow;
-int ret = 0;		//��������ķ����?
-int tempRetNum = 0; //EXP()ʽ���е���ʱ����ֵ
+int ret = 0;		//?????????????
+int tempRetNum = 0; //EXP()????��?????????
 struct ExpElem
 {
-	int type; //1 Exp�е����֣�2 �������?3 �Ĵ�����4 UnaryOp, 5 �ȽϷ���
+	int type; //1 Exp?��??????2 ???????3 ???????4 UnaryOp, 5 ??????
 	/* 
-	1�����ֵ�ֵ
-	2��1�ӷ���2������3�˷���4������5ȡ��, 6 &&, 7 ||
-	3���Ĵ����ı��?
-	4��1���� 2���� 3 Not
+	1????????
+	2??1?????2??????3?????4??????5???, 6 &&, 7 ||
+	3???????????
+	4??1???? 2???? 3 Not
 	5: 1 == 2 != 3 < 4 > 5<= 6>=
 	*/
 	int value;
-	int value_1; //i1ʱ��ֵ������type=3ʱʹ��
+	int value_1; //i1??????????type=3????
 };
 struct ExpElem *tempExpStack;
-stack<struct ExpElem> ExpStack; //�������ɼ���ֵLLVM IR��ջ
+stack<struct ExpElem> ExpStack; //????????????LLVM IR???
 bool VarInInit = false;
 bool LvalIsConst = false;
 struct VarItem
 {
-	bool isConst;	 //�Ƿ��ǳ���
-	int registerNum; //�Ĵ����ĺ���
+	bool isConst;	 //????????
+	int registerNum; //??????????
 };
-map<string, struct VarItem>::iterator varIt; //Varmap����������
+map<string, struct VarItem>::iterator varIt; //Varmap??????????
 map<string, struct VarItem> VarMap;
-int VarMapSt = 0; //��ǰ�¼Ĵ�����ֵ
-// struct CondBlock{       //����������Ӧ�Ĵ�������?
-// 	int registerNum; //�Ĵ�����ֵ
-// 	int type;  //���Ǹ�ʲô������ 1 IF 2 Else 3 LOrd 4 LAnd 5 main
-// 	int num;  //����������ǵڼ���?
-// 	bool wantB;  //��Ҫ��һ������������ʲô����ֵ
+int VarMapSt = 0; //????????????
+// struct CondBlock{       //????????????????????
+// 	int registerNum; //????????
+// 	int type;  //????????????? 1 IF 2 Else 3 LOrd 4 LAnd 5 main
+// 	int num;  //???????????????
+// 	bool wantB;  //?????????????????????????
 // };
-// map<int, struct CondBlock> CondBlockMap;  //map[type]��num�������ˡ�
-int condCount = 1; //���ǵڼ���cond����
+// map<int, struct CondBlock> CondBlockMap;  //map[type]??num?????????
+int condCount = 1; //????????cond????
 bool condHasIcmp = false;
 stack<int> condCountFalseStack;
 stack<int> condCountTrueStack;
-map<bool, int> condCountMap; //û���õ�����boolֵ���ж�����������ı��
+map<bool, int> condCountMap; //??????????bool????��??????????????
 
-int mainCount = 1; //׼�����������ص����������棬��������Count
+int mainCount = 1; //???????????????????????��????????Count
 struct FuncItem
 {
-	int RetType;		//������������ 1Ϊint 0Ϊvoid
-	vector<int> params; //���������б�
-	string funcName;	//LLVM IR�еĺ�����
-	int paramsNum;		//������������
+	int RetType;		//???????????? 1?int 0?void
+	vector<int> params; //?????????��?
+	string funcName;	//LLVM IR?��??????
+	int paramsNum;		//????????????
 };
 map<string, struct FuncItem> FuncMap;
-map<string, struct FuncItem>::iterator funcIt; //Funcmap����������
+map<string, struct FuncItem>::iterator funcIt; //Funcmap??????????
 int LVal();
 int getToken();
 int CompUnit();
@@ -146,9 +146,9 @@ int main(int argc, char *argv[])
 	return 0;
 }
 
-//����ת��
+//???????
 void ChangeTen(int n, char str[])
-{ //��n������ת����10������
+{ //??n???????????10??????
 	int len = strlen(str), i, sum = 0, t = 1;
 	for (i = len - 1; i >= 0; i--)
 	{
@@ -170,13 +170,13 @@ void ChangeTen(int n, char str[])
 	sym[symed].name = "Number";
 	sym[symed++].type = 21;
 }
-//�ڱ���ʽ���㣬Exp()�ຯ��ʱ ʹ�øú�������
+//??????????Exp()????? ???��???????
 void error()
 {
 	ret = 120;
 	printf("\nExp() error");
 }
-//�ʷ�����
+//???????
 int getToken()
 {
 	int note = 0;
@@ -214,7 +214,7 @@ int getToken()
 				note = 1;
 				sst++;
 			}
-			//Ident���߹ؼ���
+			//Ident????????
 			else if ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || ch == '_')
 			{
 				token[tst++] = ch;
@@ -235,7 +235,7 @@ int getToken()
 				}
 				token[tst] = '\0';
 				tst = 0;
-				//�ж��Ƿ��ǹؼ���
+				//?��?????��????
 				for (int i = 0; i <= 5; i++)
 				{
 					if (strcmp(token, key[i]) == 0)
@@ -245,7 +245,7 @@ int getToken()
 						iskey = 1;
 					}
 				}
-				//�ж��Ƿ��ǵ��ú���
+				//?��????????��???
 				for (int i = 0; i <= 3; i++)
 				{
 					if (strcmp(token, funcCall[i]) == 0)
@@ -261,7 +261,7 @@ int getToken()
 					sym[symed++].type = 22;
 				}
 			}
-			//Number��
+			//Number??
 			else if (ch >= '0' && ch <= '9')
 			{
 				if (ch != '0')
@@ -279,7 +279,7 @@ int getToken()
 				}
 				else
 				{
-					//16����
+					//16????
 					if (str[sst + 1] == 'x' || str[sst + 1] == 'X')
 					{
 						sst++;
@@ -297,13 +297,13 @@ int getToken()
 							tst = 0;
 							ChangeTen(16, token);
 						}
-						//16����Number����
+						//16????Number????
 						else
 						{
 							return 16;
 						}
 					}
-					//8����
+					//8????
 					else
 					{
 						if (str[sst + 1] >= '0' && str[sst + 1] <= '8')
@@ -499,7 +499,7 @@ int getToken()
 	}
 	return 0;
 }
-//��ʼ����������
+//?????????????
 void initFunc()
 {
 	//int getint();
@@ -547,7 +547,7 @@ void initFunc()
 	//void putarray(int, int[]);
 	//fprintf(fpout,"declare i32 @getint()\n");
 }
-//��ʼ����������������
+//???????????????????
 // void initCond(){
 // 	CondBlockMap[1].num = 1;
 // 	CondBlockMap[2].num = 1;
@@ -555,7 +555,7 @@ void initFunc()
 // 	CondBlockMap[4].num = 1;
 // 	CondBlockMap[5].num = 1;
 // }
-//�﷨����
+//??????
 int CompUnit()
 {
 	initFunc();
@@ -587,7 +587,7 @@ int Decl()
 }
 int ConstDecl()
 {
-	//const��Decl()���Ѿ����?
+	//const??Decl()????????
 
 	ret = Btype();
 	if (ret != 0)
@@ -636,7 +636,7 @@ int ConstDef()
 		tempVarItem->registerNum = ++VarMapSt;
 		VarMap[symNow.name] = *tempVarItem;
 
-		fprintf(fpout, "    %%%d = alloca i32\n", VarMapSt);
+		fprintf(fpout, "    %%x%d = alloca i32\n", VarMapSt);
 		symNow = sym[symst++];
 		if (symNow.type != 52)
 		{
@@ -650,11 +650,11 @@ int ConstDef()
 		tempExpStack = &ExpStack.top();
 		if (tempExpStack->type == 1)
 		{
-			fprintf(fpout, "    store i32 %d, i32* %%%d\n", tempExpStack->value, tempVarItem->registerNum);
+			fprintf(fpout, "    store i32 %d, i32* %%x%d\n", tempExpStack->value, tempVarItem->registerNum);
 		}
 		else if (tempExpStack->type == 3)
 		{
-			fprintf(fpout, "    store i32 %%%d, i32* %%%d\n", tempExpStack->value, tempVarItem->registerNum);
+			fprintf(fpout, "    store i32 %%x%d, i32* %%x%d\n", tempExpStack->value, tempVarItem->registerNum);
 		}
 		else
 		{
@@ -732,7 +732,7 @@ int VarDef()
 		tempVarItem->registerNum = ++VarMapSt;
 		VarMap[symNow.name] = *tempVarItem;
 
-		fprintf(fpout, "    %%%d = alloca i32\n", VarMapSt);
+		fprintf(fpout, "    %%x%d = alloca i32\n", VarMapSt);
 		if (sym[symst].type == 52)
 			symNow = sym[symst++];
 		if (symNow.type != 52)
@@ -746,11 +746,11 @@ int VarDef()
 		tempExpStack = &ExpStack.top();
 		if (tempExpStack->type == 1)
 		{
-			fprintf(fpout, "    store i32 %d, i32* %%%d\n", tempExpStack->value, tempVarItem->registerNum);
+			fprintf(fpout, "    store i32 %d, i32* %%x%d\n", tempExpStack->value, tempVarItem->registerNum);
 		}
 		else if (tempExpStack->type == 3)
 		{
-			fprintf(fpout, "    store i32 %%%d, i32* %%%d\n", tempExpStack->value, tempVarItem->registerNum);
+			fprintf(fpout, "    store i32 %%x%d, i32* %%x%d\n", tempExpStack->value, tempVarItem->registerNum);
 		}
 		else
 		{
@@ -814,7 +814,7 @@ int FuncType()
 	return 0;
 }
 int Ident()
-{ //ֻ����FuncDef
+{ //?????FuncDef
 	if (symNow.type == 2)
 	{
 		fprintf(fpout, "@main");
@@ -881,7 +881,7 @@ int Stmt()
 		}
 		else if (tempExpStack->type == 3)
 		{
-			fprintf(fpout, " i32 %%%d", tempExpStack->value);
+			fprintf(fpout, " i32 %%x%d", tempExpStack->value);
 		}
 		else
 		{
@@ -923,11 +923,11 @@ int Stmt()
 		symNow = sym[symst++];
 		if (tempExpStack->type == 1)
 		{
-			fprintf(fpout, "    store i32 %d, i32* %%%d\n", tempExpStack->value, retRegister);
+			fprintf(fpout, "    store i32 %d, i32* %%x%d\n", tempExpStack->value, retRegister);
 		}
 		else if (tempExpStack->type == 3)
 		{
-			fprintf(fpout, "    store i32 %%%d, i32* %%%d\n", tempExpStack->value, retRegister);
+			fprintf(fpout, "    store i32 %%x%d, i32* %%x%d\n", tempExpStack->value, retRegister);
 		}
 		else
 		{
@@ -943,7 +943,7 @@ int Stmt()
 		return 0;
 	}
 	else if (symNow.type == 5)
-	{ //�������?
+	{ //???????
 		symNow = sym[symst++];
 		if (symNow.type != 55)
 		{
@@ -953,7 +953,7 @@ int Stmt()
 		symNow = sym[symst++];
 		Cond();
 		tempExpStack = &ExpStack.top();
-		fprintf(fpout, "    br i1 %%%d, label %%t_%d, label %%f_%d\n\n", tempExpStack->value, condCount, (condCount + 1));
+		fprintf(fpout, "    br i1 %%x%d, label %%t_%d, label %%f_%d\n\n", tempExpStack->value, condCount, (condCount + 1));
 		condCountMap[true] = condCount;
 		condCountTrueStack.push(condCount);
 		condCountMap[false] = condCount + 1;
@@ -989,14 +989,14 @@ int Stmt()
 			fprintf(fpout, "    br label %%m_%d\n", mainCount);
 			fprintf(fpout, "\n");
 		}
-		while (!condCountTrueStack.empty())
+		if (!condCountTrueStack.empty())
 		{
 			int tem = condCountTrueStack.top();
 			condCountTrueStack.pop();
 			fprintf(fpout, "t_%d:\n", tem);
 			fprintf(fpout, "    br label %%m_%d\n", mainCount);
 		}
-		while (!condCountFalseStack.empty())
+		if (!condCountFalseStack.empty())
 		{
 			int tem = condCountFalseStack.top();
 			condCountFalseStack.pop();
@@ -1050,7 +1050,7 @@ int AddExp()
 	if (ret != 0)
 		return ret;
 	if (sym[symst].type == 59 || sym[symst].type == 62)
-	{ //������һ���ʣ��ж��Ƿ���ȷ
+	{ //?????????????��???????
 		symNow = sym[symst++];
 	}
 	while (symNow.type == 59 || symNow.type == 62)
@@ -1061,14 +1061,14 @@ int AddExp()
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 2;
-			tempExpStack->value = 1; //�Ǽӷ�
+			tempExpStack->value = 1; //????
 			ExpStack.push(*tempExpStack);
 		}
 		else
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 2;
-			tempExpStack->value = 2; //�Ǽ���
+			tempExpStack->value = 2; //?????
 			ExpStack.push(*tempExpStack);
 		}
 		ret = MulExp();
@@ -1076,7 +1076,7 @@ int AddExp()
 			return ret;
 		Operation();
 		if (sym[symst].type == 59 || sym[symst].type == 62)
-		{ //������һ���ʣ��ж��Ƿ���ȷ
+		{ //?????????????��???????
 			symNow = sym[symst++];
 		}
 	}
@@ -1090,7 +1090,7 @@ int MulExp()
 	if (ret != 0)
 		return ret;
 	if (sym[symst].type == 60 || sym[symst].type == 61 || sym[symst].type == 63)
-	{ //������һ���ʣ��ж��Ƿ���ȷ
+	{ //?????????????��???????
 		symNow = sym[symst++];
 	}
 	while (symNow.type == 60 || symNow.type == 61 || symNow.type == 63)
@@ -1101,21 +1101,21 @@ int MulExp()
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 2;
-			tempExpStack->value = 3; //�ǳ˷�
+			tempExpStack->value = 3; //????
 			ExpStack.push(*tempExpStack);
 		}
 		else if (tempSym.type == 61)
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 2;
-			tempExpStack->value = 4; //�ǳ���
+			tempExpStack->value = 4; //?????
 			ExpStack.push(*tempExpStack);
 		}
 		else
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 2;
-			tempExpStack->value = 5; //��ȡ��
+			tempExpStack->value = 5; //?????
 			ExpStack.push(*tempExpStack);
 		}
 		RetNum = UnaryExp();
@@ -1123,7 +1123,7 @@ int MulExp()
 			return ret;
 		Operation();
 		if (sym[symst].type == 60 || sym[symst].type == 61 || sym[symst].type == 63)
-		{ //������һ���ʣ��ж��Ƿ���ȷ
+		{ //?????????????��???????
 			symNow = sym[symst++];
 		}
 	}
@@ -1163,24 +1163,24 @@ void UnaryOp()
 	if (symNow.type == 59 || symNow.type == 62 || symNow.type == 71)
 	{
 		if (symNow.type == 59)
-		{ //����һ��+-�ţ����Դ����ж�Number������
+		{ //???????+-???????????��?Number??????
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 4;
-			tempExpStack->value = 1; //������
+			tempExpStack->value = 1; //??????
 			ExpStack.push(*tempExpStack);
 		}
 		else if (symNow.type == 62)
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 4;
-			tempExpStack->value = 2; //�Ǹ���
+			tempExpStack->value = 2; //?????
 			ExpStack.push(*tempExpStack);
 		}
 		else
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 4;
-			tempExpStack->value = 3; //��Not,����
+			tempExpStack->value = 3; //??Not,????
 			ExpStack.push(*tempExpStack);
 		}
 	}
@@ -1216,7 +1216,7 @@ int PrimaryExp()
 		tempExpStack->type = 3;
 		tempExpStack->value = ++VarMapSt;
 		ExpStack.push(*tempExpStack);
-		fprintf(fpout, "    %%%d = load i32, i32* %%%d\n", tempExpStack->value, LvalRegister);
+		fprintf(fpout, "    %%x%d = load i32, i32* %%x%d\n", tempExpStack->value, LvalRegister);
 	}
 	else
 	{
@@ -1232,7 +1232,7 @@ int PrimaryExp()
 }
 int LVal()
 {
-	//����Ƿ����Ѿ�����ı���
+	//???????????????????
 	bool declared = false;
 	varIt = VarMap.find(symNow.name);
 	if (varIt != VarMap.end())
@@ -1241,14 +1241,14 @@ int LVal()
 	}
 
 	if ((*varIt).second.isConst)
-	{ //��������ǳ���?
+	{ //????????????
 		LvalIsConst = true;
 	}
-	else //����������ǳ�����������ڳ����ĳ�ʼ��ʽ���У���Ƿ���?
+	else //????????????????????????????????????��???????
 	{
 		VarInInit = true;
 	}
-	return (*varIt).second.registerNum; //���ؼĴ�������
+	return (*varIt).second.registerNum; //????????????
 }
 void Cond()
 {
@@ -1272,11 +1272,11 @@ void Cond()
 
 		if (num.type == 1)
 		{
-			fprintf(fpout, "    %%%d = icmp ne i32 %d, 0\n", ++VarMapSt, num.value);
+			fprintf(fpout, "    %%x%d = icmp ne i32 %d, 0\n", ++VarMapSt, num.value);
 		}
 		else
 		{
-			fprintf(fpout, "    %%%d = icmp ne i32 %%%d, 0\n", ++VarMapSt, num.value);
+			fprintf(fpout, "    %%x%d = icmp ne i32 %%x%d, 0\n", ++VarMapSt, num.value);
 		}
 		num.value = VarMapSt;
 		num.type = 3;
@@ -1297,7 +1297,7 @@ void LOrExp()
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 2;
-			tempExpStack->value = 7; //��||
+			tempExpStack->value = 7; //??||
 			ExpStack.push(*tempExpStack);
 		}
 		LAndExp();
@@ -1312,7 +1312,7 @@ void LOrExp()
 		// 	condCountFalseStack.pop();
 		// 	int tem3 = condCountFalseStack.top();
 		// 	fprintf(fpout,"%d_f:\n", tem2);
-		// 	fprintf(fpout,"    br label %%%d_f\n",tem3);
+		// 	fprintf(fpout,"    br label %%x%d_f\n",tem3);
 		// }
 		if (sym[symst].type == 66)
 			symNow = sym[symst++];
@@ -1333,7 +1333,7 @@ void LAndExp()
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 2;
-			tempExpStack->value = 6; //��&&
+			tempExpStack->value = 6; //??&&
 			ExpStack.push(*tempExpStack);
 		}
 		EqExp();
@@ -1347,7 +1347,7 @@ void LAndExp()
 		// 	condCountTrueStack.pop();
 		// 	int tem3 = condCountTrueStack.top();
 		// 	fprintf(fpout,"%d_t:\n", tem2);
-		// 	fprintf(fpout,"    br label %%%d_t\n",tem3);
+		// 	fprintf(fpout,"    br label %%x%d_t\n",tem3);
 		// }
 		if (sym[symst].type == 67)
 			symNow = sym[symst++];
@@ -1366,14 +1366,14 @@ void EqExp()
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 5;
-			tempExpStack->value = 1; //�����?
+			tempExpStack->value = 1; //?????
 			ExpStack.push(*tempExpStack);
 		}
 		else
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 5;
-			tempExpStack->value = 2; //�ǲ����?
+			tempExpStack->value = 2; //??????
 			ExpStack.push(*tempExpStack);
 		}
 		EqExp();
@@ -1396,28 +1396,28 @@ void RelExp()
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 5;
-			tempExpStack->value = 3; //��С��
+			tempExpStack->value = 3; //??��??
 			ExpStack.push(*tempExpStack);
 		}
 		else if (tempSym.type == 65)
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 5;
-			tempExpStack->value = 4; //�Ǵ���
+			tempExpStack->value = 4; //?????
 			ExpStack.push(*tempExpStack);
 		}
 		else if (tempSym.type == 69)
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 5;
-			tempExpStack->value = 5; //��С�ڵ���
+			tempExpStack->value = 5; //??��?????
 			ExpStack.push(*tempExpStack);
 		}
 		else
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 5;
-			tempExpStack->value = 6; //�Ǵ��ڵ���
+			tempExpStack->value = 6; //????????
 			ExpStack.push(*tempExpStack);
 		}
 		AddExp();
@@ -1475,7 +1475,7 @@ void FuncCall()
 		tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 		tempExpStack->type = 3;
 		tempExpStack->value = ++VarMapSt;
-		fprintf(fpout, "    %%%d = call i32 %s", tempExpStack->value, (*funcIt).second.funcName.c_str());
+		fprintf(fpout, "    %%x%d = call i32 %s", tempExpStack->value, (*funcIt).second.funcName.c_str());
 	}
 	fprintf(fpout, "(");
 	for (int i = 0; i < (*funcIt).second.paramsNum; i++)
@@ -1490,7 +1490,7 @@ void FuncCall()
 		}
 		else if (ExpStack.top().type == 3)
 		{
-			fprintf(fpout, "i32 %%%d", ExpStack.top().value);
+			fprintf(fpout, "i32 %%x%d", ExpStack.top().value);
 		}
 		else
 		{
@@ -1544,7 +1544,7 @@ void Operation()
 	tempExpStack->value = ++VarMapSt;
 	ExpStack.push(*tempExpStack);
 
-	fprintf(fpout, "    %%%d = ", tempExpStack->value);
+	fprintf(fpout, "    %%x%d = ", tempExpStack->value);
 	switch (op.value)
 	{
 	case 1:
@@ -1575,7 +1575,7 @@ void Operation()
 	}
 	else
 	{
-		fprintf(fpout, "%%%d,", num1.value);
+		fprintf(fpout, "%%x%d,", num1.value);
 	}
 	if (num2.type == 1)
 	{
@@ -1583,7 +1583,7 @@ void Operation()
 	}
 	else
 	{
-		fprintf(fpout, " %%%d", num2.value);
+		fprintf(fpout, " %%x%d", num2.value);
 	}
 	fprintf(fpout, "\n");
 }
@@ -1606,7 +1606,7 @@ void OperationUnaryOp()
 	struct ExpElem op = ExpStack.top();
 	ExpStack.pop();
 
-	//�Ѿ��������ļӼ�����
+	//?????????????????
 	if (op.type != 4)
 	{
 		ExpStack.push(op);
@@ -1617,11 +1617,11 @@ void OperationUnaryOp()
 	{
 		if (num.type == 1)
 		{
-			fprintf(fpout, "    %%%d = sub i32 0, %d\n", ++VarMapSt, num.value);
+			fprintf(fpout, "    %%x%d = sub i32 0, %d\n", ++VarMapSt, num.value);
 		}
 		else
 		{
-			fprintf(fpout, "    %%%d = sub i32 0, %%%d\n", ++VarMapSt, num.value);
+			fprintf(fpout, "    %%x%d = sub i32 0, %%x%d\n", ++VarMapSt, num.value);
 		}
 		num.type = 3;
 		num.value = VarMapSt;
@@ -1630,14 +1630,14 @@ void OperationUnaryOp()
 	{
 		if (num.type == 1)
 		{
-			fprintf(fpout, "    %%%d = icmp eq i32 %d, 0\n", ++VarMapSt, num.value);
+			fprintf(fpout, "    %%x%d = icmp eq i32 %d, 0\n", ++VarMapSt, num.value);
 		}
 		else
 		{
-			fprintf(fpout, "    %%%d = icmp eq i32 %%%d, 0\n", ++VarMapSt, num.value);
+			fprintf(fpout, "    %%x%d = icmp eq i32 %%x%d, 0\n", ++VarMapSt, num.value);
 		}
 		num.value = VarMapSt;
-		fprintf(fpout, "    %%%d = zext i1 %%%d to i32\n", ++VarMapSt, num.value);
+		fprintf(fpout, "    %%x%d = zext i1 %%x%d to i32\n", ++VarMapSt, num.value);
 		num.type = 3;
 		num.value_1 = num.value;
 		num.value = VarMapSt;
@@ -1675,7 +1675,7 @@ void OperationCond()
 	tempExpStack->value = ++VarMapSt;
 	ExpStack.push(*tempExpStack);
 
-	fprintf(fpout, "    %%%d = ", tempExpStack->value);
+	fprintf(fpout, "    %%x%d = ", tempExpStack->value);
 	switch (op.value)
 	{
 	case 1:
@@ -1703,7 +1703,7 @@ void OperationCond()
 	}
 	else
 	{
-		fprintf(fpout, "%%%d,", num1.value);
+		fprintf(fpout, "%%x%d,", num1.value);
 	}
 	if (num2.type == 1)
 	{
@@ -1711,10 +1711,10 @@ void OperationCond()
 	}
 	else
 	{
-		fprintf(fpout, " %%%d", num2.value);
+		fprintf(fpout, " %%x%d", num2.value);
 	}
 	fprintf(fpout, "\n");
-	// fprintf(fpout,"    br i1 %%%d, label %%%d_t, label %%%d_f\n",tempExpStack->value,condCount,(condCount+1));
+	// fprintf(fpout,"    br i1 %%x%d, label %%x%d_t, label %%x%d_f\n",tempExpStack->value,condCount,(condCount+1));
 	// condCountMap[true] = condCount;
 	// condCountTrueStack.push(condCount);
 	// condCountMap[false] = condCount+1;

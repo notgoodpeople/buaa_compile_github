@@ -1685,16 +1685,16 @@ void OperationCond()
 		fprintf(fpout, "icmp ne i32 ");
 		break;
 	case 3:
-		fprintf(fpout, "icmp lt i32 ");
+		fprintf(fpout, "icmp slt i32 ");
 		break;
 	case 4:
-		fprintf(fpout, "icmp gt i32 ");
+		fprintf(fpout, "icmp sgt i32 ");
 		break;
 	case 5:
 		fprintf(fpout, "icmp sle i32 ");
 		break;
 	case 6:
-		fprintf(fpout, "icmp ge i32 ");
+		fprintf(fpout, "icmp sge i32 ");
 		break;
 	}
 	if (num1.type == 1)

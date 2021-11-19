@@ -12,85 +12,85 @@
 using namespace std;
 char str[3024];
 char token[2560];
-int sst = 0;   //��ʾ���Ӷ���λ�� sentenceStart
-int tst = 0;   //��ʾ�ʶ���λ�� tokenStart
-int symed = 0; //��ʾ�洢���ŵĴ�������λ��
-int symst = 0; //��ʾ �洢���ŵĴ���ĵ�ǰ���?
+int sst = 0;   //锟斤拷示锟斤拷锟接讹拷锟斤拷位锟斤拷 sentenceStart
+int tst = 0;   //锟斤拷示锟绞讹拷锟斤拷位锟斤拷 tokenStart
+int symed = 0; //锟斤拷示锟芥储锟斤拷锟脚的达拷锟斤拷锟斤拷锟斤拷位锟斤拷
+int symst = 0; //锟斤拷示 锟芥储锟斤拷锟脚的达拷锟斤拷牡锟角帮拷锟饺?
 char key[9][15] = {"int", "main", "return", "const", "if", "else"};
 char keyOut[9][15] = {"Int", "Main", "Return", "Const", "If", "Else"};
 char funcCall[9][15] = {"getint", "putint", "getch", "putch"};
 char funcCallOut[9][15] = {"Func(getint)", "Func(putint)", "Func(getch)", "Func(putch)"};
 struct symType
-{ //���ڷ����Ĵ�
+{ //锟斤拷锟节凤拷锟斤拷锟侥达拷
 	string name;
-	/*���ͣ�1~10 Ϊ�ؼ��֣�int��main��return��const��if��else
-		11~20Ϊ�������ã�getint putint getch putch
+	/*锟斤拷锟酵ｏ拷1~10 为锟截硷拷锟街ｏ拷int锟斤拷main锟斤拷return锟斤拷const锟斤拷if锟斤拷else
+		11~20为锟斤拷锟斤拷锟斤拷锟矫ｏ拷getint putint getch putch
 		21 Number 22 Ident
-		51~ ���� 51 == 52 = 53 , 54 ; 55 ( 56 ) 57 { 58 } 59 + 60 *
+		51~ 锟斤拷锟斤拷 51 == 52 = 53 , 54 ; 55 ( 56 ) 57 { 58 } 59 + 60 *
 				61 / 62 - 63 % 64 < 65 > 66 || 67 && 68 != 69 <= 70 >=
 				71 !
 	*/
-	int value; //�����number��  �ᴢ��int�͵�ֵ
+	int value; //锟斤拷锟斤拷锟絥umber锟斤拷  锟结储锟斤拷int锟酵碉拷值
 	int type;
-} sym[1005];
+} sym[10005];
 struct symType symNow;
-int ret = 0;		//��������ķ����?
-int tempRetNum = 0; //EXP()ʽ���е���ʱ����ֵ
+int ret = 0;		//锟斤拷锟斤拷锟斤拷锟斤拷姆锟斤拷锟街?
+int tempRetNum = 0; //EXP()式锟斤拷锟叫碉拷锟斤拷时锟斤拷锟斤拷值
 struct ExpElem
 {
-	int type; //1 Exp�е����֣�2 �������?3 �Ĵ�����4 UnaryOp, 5 �ȽϷ���
+	int type; //1 Exp锟叫碉拷锟斤拷锟街ｏ拷2 锟斤拷锟斤拷锟斤拷锟?3 锟侥达拷锟斤拷锟斤拷4 UnaryOp, 5 锟饺较凤拷锟斤拷
 	/* 
-	1�����ֵ�ֵ
-	2��1�ӷ���2������3�˷���4������5ȡ��, 6 &&, 7 ||
-	3���Ĵ����ı��?
-	4��1���� 2���� 3 Not
+	1锟斤拷锟斤拷锟街碉拷值
+	2锟斤拷1锟接凤拷锟斤拷2锟斤拷锟斤拷锟斤拷3锟剿凤拷锟斤拷4锟斤拷锟斤拷锟斤拷5取锟斤拷, 6 &&, 7 ||
+	3锟斤拷锟侥达拷锟斤拷锟侥憋拷锟?
+	4锟斤拷1锟斤拷锟斤拷 2锟斤拷锟斤拷 3 Not
 	5: 1 == 2 != 3 < 4 > 5<= 6>=
 	*/
 	int value;
-	int value_1; //i1ʱ��ֵ������type=3ʱʹ��
+	int value_1; //i1时锟斤拷值锟斤拷锟斤拷锟斤拷type=3时使锟斤拷
 };
 struct ExpElem *tempExpStack;
-stack<struct ExpElem> ExpStack; //�������ɼ���ֵLLVM IR��ջ
+stack<struct ExpElem> ExpStack; //锟斤拷锟斤拷锟斤拷锟缴硷拷锟斤拷值LLVM IR锟斤拷栈
 bool VarInInit = false;
 bool LvalIsConst = false;
 struct VarItem
 {
-	bool isConst;	 //�Ƿ��ǳ���
-	int registerNum; //�Ĵ����ĺ���
-	int globalNum;  //������ȫ�ֱ������ǳ���ʱʹ��
+	bool isConst;	 //锟角凤拷锟角筹拷锟斤拷
+	int registerNum; //锟侥达拷锟斤拷锟侥猴拷锟斤拷
+	int globalNum;  //锟斤拷锟斤拷锟斤拷全锟街憋拷锟斤拷锟斤拷锟角筹拷锟斤拷时使锟斤拷
 };
-map<string, struct VarItem>::iterator varIt; //Varmap����������
-map<string, struct VarItem> GVarMap;  //ȫ�ֱ�����Map
-bool GlobalDef;   //��ֵΪtrueʱ�������������ڶ���ȫ�ֱ���
-bool IsGlobalVal; //��ֵΪtrueʱ��˵����ǰload�ı�����ȫ�ֱ���
-map<string, struct VarItem> BVarMap;  //������еľֲ�Map
+map<string, struct VarItem>::iterator varIt; //Varmap锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷
+map<string, struct VarItem> GVarMap;  //全锟街憋拷锟斤拷锟斤拷Map
+bool GlobalDef;   //锟斤拷值为true时锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟节讹拷锟斤拷全锟街憋拷锟斤拷
+bool IsGlobalVal; //锟斤拷值为true时锟斤拷说锟斤拷锟斤拷前load锟侥憋拷锟斤拷锟斤拷全锟街憋拷锟斤拷
+map<string, struct VarItem> BVarMap;  //锟斤拷锟斤拷锟斤拷械木植锟組ap
 list< map<string, struct VarItem> > VarMapList;
-list< map<string, struct VarItem> >::reverse_iterator VarMapListIt; //VarMapList���������?
-int VarMapSt = 0; //��ǰ�¼Ĵ�����ֵ
-int GVarMapst = 10000;  //��ǰȫ�ֱ����Ĵ�����ֵ,�;ֲ������Ĵ������֣���10000��ʼ
-// struct CondBlock{       //����������Ӧ�Ĵ�������?
-// 	int registerNum; //�Ĵ�����ֵ
-// 	int type;  //���Ǹ�ʲô������ 1 IF 2 Else 3 LOrd 4 LAnd 5 main
-// 	int num;  //����������ǵڼ���?
-// 	bool wantB;  //��Ҫ��һ������������ʲô����ֵ
+list< map<string, struct VarItem> >::reverse_iterator VarMapListIt; //VarMapList锟斤拷锟斤拷锟斤拷锟斤拷锟?
+int VarMapSt = 0; //锟斤拷前锟铰寄达拷锟斤拷锟斤拷值
+int GVarMapst = 10000;  //锟斤拷前全锟街憋拷锟斤拷锟侥达拷锟斤拷锟斤拷值,锟酵局诧拷锟斤拷锟斤拷锟侥达拷锟斤拷锟斤拷锟街ｏ拷锟斤拷10000锟斤拷始
+// struct CondBlock{       //锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷应锟侥达拷锟斤拷锟斤拷锟较?
+// 	int registerNum; //锟侥达拷锟斤拷锟斤拷值
+// 	int type;  //锟斤拷锟角革拷什么锟斤拷锟斤拷锟斤拷 1 IF 2 Else 3 LOrd 4 LAnd 5 main
+// 	int num;  //锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷堑诩锟斤拷锟?
+// 	bool wantB;  //锟斤拷要锟斤拷一锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷什么锟斤拷锟斤拷值
 // };
-// map<int, struct CondBlock> CondBlockMap;  //map[type]��num�������ˡ�
-int condCount = 1; //���ǵڼ���cond����
+// map<int, struct CondBlock> CondBlockMap;  //map[type]锟斤拷num锟斤拷锟斤拷锟斤拷锟剿★拷
+int condCount = 1; //锟斤拷锟角第硷拷锟斤拷cond锟斤拷锟斤拷
 bool condHasIcmp = false;
 stack<int> condCountFalseStack;
 stack<int> condCountTrueStack;
-map<bool, int> condCountMap; //û���õ�����boolֵ���ж�����������ı��
+map<bool, int> condCountMap; //没锟斤拷锟矫碉拷锟斤拷锟斤拷bool值锟斤拷锟叫讹拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷谋锟斤拷
 
-int mainCount = 1; //׼�����������ص����������棬��������Count
+int mainCount = 1; //准锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟截碉拷锟斤拷锟斤拷锟斤拷锟斤拷锟芥，锟斤拷锟斤拷锟斤拷锟斤拷Count
 struct FuncItem
 {
-	int RetType;		//������������ 1Ϊint 0Ϊvoid
-	vector<int> params; //���������б�
-	string funcName;	//LLVM IR�еĺ�����
-	int paramsNum;		//������������
+	int RetType;		//锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷 1为int 0为void
+	vector<int> params; //锟斤拷锟斤拷锟斤拷锟斤拷锟叫憋拷
+	string funcName;	//LLVM IR锟叫的猴拷锟斤拷锟斤拷
+	int paramsNum;		//锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷
 };
 map<string, struct FuncItem> FuncMap;
-map<string, struct FuncItem>::iterator funcIt; //Funcmap����������
+map<string, struct FuncItem>::iterator funcIt; //Funcmap锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷
 int LVal();
 int getToken();
 int CompUnit();
@@ -158,9 +158,9 @@ int main(int argc, char *argv[])
 	return 0;
 }
 
-//����ת��
+//锟斤拷锟斤拷转锟斤拷
 void ChangeTen(int n, char str[])
-{ //��n������ת����10������
+{ //锟斤拷n锟斤拷锟斤拷锟斤拷转锟斤拷锟斤拷10锟斤拷锟斤拷锟斤拷
 	int len = strlen(str), i, sum = 0, t = 1;
 	for (i = len - 1; i >= 0; i--)
 	{
@@ -182,13 +182,13 @@ void ChangeTen(int n, char str[])
 	sym[symed].name = "Number";
 	sym[symed++].type = 21;
 }
-//�ڱ���ʽ���㣬Exp()�ຯ��ʱ ʹ�øú�������
+//锟节憋拷锟斤拷式锟斤拷锟姐，Exp()锟洁函锟斤拷时 使锟矫该猴拷锟斤拷锟斤拷锟斤拷
 void error()
 {
 	ret = 120;
 	printf("\nExp() error");
 }
-//�ʷ�����
+//锟绞凤拷锟斤拷锟斤拷
 int getToken()
 {
 	int note = 0;
@@ -226,7 +226,7 @@ int getToken()
 				note = 1;
 				sst++;
 			}
-			//Ident���߹ؼ���
+			//Ident锟斤拷锟竭关硷拷锟斤拷
 			else if ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || ch == '_')
 			{
 				token[tst++] = ch;
@@ -247,7 +247,7 @@ int getToken()
 				}
 				token[tst] = '\0';
 				tst = 0;
-				//�ж��Ƿ��ǹؼ���
+				//锟叫讹拷锟角凤拷锟角关硷拷锟斤拷
 				for (int i = 0; i <= 5; i++)
 				{
 					if (strcmp(token, key[i]) == 0)
@@ -257,7 +257,7 @@ int getToken()
 						iskey = 1;
 					}
 				}
-				//�ж��Ƿ��ǵ��ú���
+				//锟叫讹拷锟角凤拷锟角碉拷锟矫猴拷锟斤拷
 				for (int i = 0; i <= 3; i++)
 				{
 					if (strcmp(token, funcCall[i]) == 0)
@@ -273,7 +273,7 @@ int getToken()
 					sym[symed++].type = 22;
 				}
 			}
-			//Number��
+			//Number锟斤拷
 			else if (ch >= '0' && ch <= '9')
 			{
 				if (ch != '0')
@@ -291,7 +291,7 @@ int getToken()
 				}
 				else
 				{
-					//16����
+					//16锟斤拷锟斤拷
 					if (str[sst + 1] == 'x' || str[sst + 1] == 'X')
 					{
 						sst++;
@@ -309,13 +309,13 @@ int getToken()
 							tst = 0;
 							ChangeTen(16, token);
 						}
-						//16����Number����
+						//16锟斤拷锟斤拷Number锟斤拷锟斤拷
 						else
 						{
 							return 16;
 						}
 					}
-					//8����
+					//8锟斤拷锟斤拷
 					else
 					{
 						if (str[sst + 1] >= '0' && str[sst + 1] <= '8')
@@ -511,7 +511,7 @@ int getToken()
 	}
 	return 0;
 }
-//��ʼ����������
+//锟斤拷始锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷
 void initFunc()
 {
 	//int getint();
@@ -559,7 +559,7 @@ void initFunc()
 	//void putarray(int, int[]);
 	//fprintf(fpout,"declare i32 @getint()\n");
 }
-//��ʼ����������������
+//锟斤拷始锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷
 // void initCond(){
 // 	CondBlockMap[1].num = 1;
 // 	CondBlockMap[2].num = 1;
@@ -567,7 +567,7 @@ void initFunc()
 // 	CondBlockMap[4].num = 1;
 // 	CondBlockMap[5].num = 1;
 // }
-//�﷨����
+//锟斤法锟斤拷锟斤拷
 int CompUnit()
 {
 	initFunc();
@@ -605,7 +605,7 @@ int Decl()
 }
 int ConstDecl()
 {
-	//const��Decl()���Ѿ����?
+	//const锟斤拷Decl()锟斤拷锟窖撅拷锟斤拷锟?
 
 	ret = Btype();
 	if (ret != 0)
@@ -711,7 +711,7 @@ int ConstDef()
 		tempVarItem->registerNum = ++GVarMapst;
 		tempVarItem->globalNum = 0;
 		string tempName = symNow.name;
-		if(sym[symst].type == 54){     //û�г�ʼ��
+		if(sym[symst].type == 54){     //没锟叫筹拷始锟斤拷
 			GVarMap[tempName] = *tempVarItem;
 			fprintf(fpout,"@x%d = dso_local global i32 %d\n",GVarMapst,tempVarItem->globalNum);
 			return 0;
@@ -740,7 +740,7 @@ int ConstInitVal()
 	if(GlobalDef == false){
 		VarInInit = false;
 		ConstExp();
-		if (VarInInit)  //������ʼ�������ñ���
+		if (VarInInit)  //锟斤拷锟斤拷锟斤拷始锟斤拷锟斤拷锟斤拷锟矫憋拷锟斤拷
 		{ 
 			throw "Error";
 		}
@@ -748,7 +748,7 @@ int ConstInitVal()
 	else{
 		VarInInit = false;
 		return ConstExp();
-		if(VarInInit){  //ȫ�ֱ�����ʼ�������ñ���
+		if(VarInInit){  //全锟街憋拷锟斤拷锟斤拷始锟斤拷锟斤拷锟斤拷锟矫憋拷锟斤拷
 			throw "Error";
 		}
 	}
@@ -867,7 +867,7 @@ int VarDef()
 		tempVarItem->registerNum = ++GVarMapst;
 		tempVarItem->globalNum = 0;
 		string tempName = symNow.name;
-		if(sym[symst].type == 54){     //û�г�ʼ��
+		if(sym[symst].type == 54){     //没锟叫筹拷始锟斤拷
 			GVarMap[tempName] = *tempVarItem;
 			fprintf(fpout,"@x%d = dso_local global i32 %d\n",GVarMapst,tempVarItem->globalNum);
 			return 0;
@@ -901,7 +901,7 @@ int InitVal()
 	else{
 		VarInInit = false;
 		int	result = GlobalAddExp(); 
-		if(VarInInit){  //ȫ�ֱ�����ʼ�������ñ���
+		if(VarInInit){  //全锟街憋拷锟斤拷锟斤拷始锟斤拷锟斤拷锟斤拷锟矫憋拷锟斤拷
 			throw "Error";
 		}
 		return result;
@@ -948,7 +948,7 @@ int FuncType()
 	return 0;
 }
 int Ident()
-{ //ֻ����FuncDef
+{ //只锟斤拷锟斤拷FuncDef
 	if (symNow.type == 2)
 	{
 		fprintf(fpout, "@main");
@@ -1105,7 +1105,7 @@ int Stmt()
 		return 0;
 	}
 	else if (symNow.type == 5)
-	{ //�������?
+	{ //锟斤拷锟斤拷锟斤拷锟?
 		symNow = sym[symst++];
 		if (symNow.type != 55)
 		{
@@ -1212,7 +1212,7 @@ int AddExp()
 	if (ret != 0)
 		return ret;
 	if (sym[symst].type == 59 || sym[symst].type == 62)
-	{ //������һ���ʣ��ж��Ƿ���ȷ
+	{ //锟斤拷锟斤拷锟斤拷一锟斤拷锟绞ｏ拷锟叫讹拷锟角凤拷锟斤拷确
 		symNow = sym[symst++];
 	}
 	while (symNow.type == 59 || symNow.type == 62)
@@ -1223,14 +1223,14 @@ int AddExp()
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 2;
-			tempExpStack->value = 1; //�Ǽӷ�
+			tempExpStack->value = 1; //锟角加凤拷
 			ExpStack.push(*tempExpStack);
 		}
 		else
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 2;
-			tempExpStack->value = 2; //�Ǽ���
+			tempExpStack->value = 2; //锟角硷拷锟斤拷
 			ExpStack.push(*tempExpStack);
 		}
 		ret = MulExp();
@@ -1238,7 +1238,7 @@ int AddExp()
 			return ret;
 		Operation();
 		if (sym[symst].type == 59 || sym[symst].type == 62)
-		{ //������һ���ʣ��ж��Ƿ���ȷ
+		{ //锟斤拷锟斤拷锟斤拷一锟斤拷锟绞ｏ拷锟叫讹拷锟角凤拷锟斤拷确
 			symNow = sym[symst++];
 		}
 	}
@@ -1252,7 +1252,7 @@ int MulExp()
 	if (ret != 0)
 		return ret;
 	if (sym[symst].type == 60 || sym[symst].type == 61 || sym[symst].type == 63)
-	{ //������һ���ʣ��ж��Ƿ���ȷ
+	{ //锟斤拷锟斤拷锟斤拷一锟斤拷锟绞ｏ拷锟叫讹拷锟角凤拷锟斤拷确
 		symNow = sym[symst++];
 	}
 	while (symNow.type == 60 || symNow.type == 61 || symNow.type == 63)
@@ -1263,21 +1263,21 @@ int MulExp()
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 2;
-			tempExpStack->value = 3; //�ǳ˷�
+			tempExpStack->value = 3; //锟角乘凤拷
 			ExpStack.push(*tempExpStack);
 		}
 		else if (tempSym.type == 61)
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 2;
-			tempExpStack->value = 4; //�ǳ���
+			tempExpStack->value = 4; //锟角筹拷锟斤拷
 			ExpStack.push(*tempExpStack);
 		}
 		else
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 2;
-			tempExpStack->value = 5; //��ȡ��
+			tempExpStack->value = 5; //锟斤拷取锟斤拷
 			ExpStack.push(*tempExpStack);
 		}
 		RetNum = UnaryExp();
@@ -1285,7 +1285,7 @@ int MulExp()
 			return ret;
 		Operation();
 		if (sym[symst].type == 60 || sym[symst].type == 61 || sym[symst].type == 63)
-		{ //������һ���ʣ��ж��Ƿ���ȷ
+		{ //锟斤拷锟斤拷锟斤拷一锟斤拷锟绞ｏ拷锟叫讹拷锟角凤拷锟斤拷确
 			symNow = sym[symst++];
 		}
 	}
@@ -1325,24 +1325,24 @@ void UnaryOp()
 	if (symNow.type == 59 || symNow.type == 62 || symNow.type == 71)
 	{
 		if (symNow.type == 59)
-		{ //����һ��+-�ţ����Դ����ж�Number������
+		{ //锟斤拷锟斤拷一锟斤拷+-锟脚ｏ拷锟斤拷锟皆达拷锟斤拷锟叫讹拷Number锟斤拷锟斤拷锟斤拷
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 4;
-			tempExpStack->value = 1; //������
+			tempExpStack->value = 1; //锟斤拷锟斤拷锟斤拷
 			ExpStack.push(*tempExpStack);
 		}
 		else if (symNow.type == 62)
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 4;
-			tempExpStack->value = 2; //�Ǹ���
+			tempExpStack->value = 2; //锟角革拷锟斤拷
 			ExpStack.push(*tempExpStack);
 		}
 		else
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 4;
-			tempExpStack->value = 3; //��Not,����
+			tempExpStack->value = 3; //锟斤拷Not,锟斤拷锟斤拷
 			ExpStack.push(*tempExpStack);
 		}
 	}
@@ -1401,7 +1401,7 @@ int PrimaryExp()
 }
 int LVal()
 {
-	//����Ƿ����Ѿ�����ı���,�����ڵ�ǰ��BVarMap��
+	//锟斤拷锟斤拷欠锟斤拷锟斤拷丫锟斤拷锟斤拷锟侥憋拷锟斤拷,锟斤拷锟斤拷锟节碉拷前锟斤拷BVarMap锟斤拷
 	bool declared = false;
 	varIt = BVarMap.find(symNow.name);  
 	if (varIt != BVarMap.end())
@@ -1409,9 +1409,9 @@ int LVal()
 		declared = true;
 	}
 
-	//�Ҳ����ˣ����ⲿ��Map
+	//锟揭诧拷锟斤拷锟剿ｏ拷锟斤拷锟解部锟斤拷Map
 	for(VarMapListIt = VarMapList.rbegin() ; VarMapListIt != VarMapList.rend() ; ++VarMapListIt){
-		if(declared){   //��BVarMap�Ѿ��ҵ���
+		if(declared){   //锟斤拷BVarMap锟窖撅拷锟揭碉拷锟斤拷
 			break;
 		}
 		varIt = (*VarMapListIt).find(symNow.name);
@@ -1436,23 +1436,23 @@ int LVal()
 		throw "Error";
 	}
 	if ((*varIt).second.isConst)
-	{ //��������ǳ���?
+	{ //锟斤拷锟斤拷锟斤拷锟斤拷浅锟斤拷锟?
 		LvalIsConst = true;
 	}
-	else //����������ǳ�����������ڳ����ĳ�ʼ��ʽ���У���Ƿ���?
+	else //锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷浅锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟节筹拷锟斤拷锟侥筹拷始锟斤拷式锟斤拷锟叫ｏ拷锟斤拷欠锟斤拷锟?
 	{
 		VarInInit = true;
 	}
 
 	// if ((*varIt).second.isConst)
-	// { //��������ǳ���?
+	// { //锟斤拷锟斤拷锟斤拷锟斤拷浅锟斤拷锟?
 	// 	LvalIsConst = true;
 	// }
-	// else //����������ǳ�����������ڳ����ĳ�ʼ��ʽ���У���Ƿ���?
+	// else //锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷浅锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟节筹拷锟斤拷锟侥筹拷始锟斤拷式锟斤拷锟叫ｏ拷锟斤拷欠锟斤拷锟?
 	// {
 	// 	VarInInit = true;
 	// }
-	return (*varIt).second.registerNum; //���ؼĴ�������
+	return (*varIt).second.registerNum; //锟斤拷锟截寄达拷锟斤拷锟斤拷锟斤拷
 }
 void Cond()
 {
@@ -1501,7 +1501,7 @@ void LOrExp()
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 2;
-			tempExpStack->value = 7; //��||
+			tempExpStack->value = 7; //锟斤拷||
 			ExpStack.push(*tempExpStack);
 		}
 		LAndExp();
@@ -1537,7 +1537,7 @@ void LAndExp()
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 2;
-			tempExpStack->value = 6; //��&&
+			tempExpStack->value = 6; //锟斤拷&&
 			ExpStack.push(*tempExpStack);
 		}
 		EqExp();
@@ -1570,14 +1570,14 @@ void EqExp()
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 5;
-			tempExpStack->value = 1; //�����?
+			tempExpStack->value = 1; //锟斤拷锟斤拷锟?
 			ExpStack.push(*tempExpStack);
 		}
 		else
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 5;
-			tempExpStack->value = 2; //�ǲ����?
+			tempExpStack->value = 2; //锟角诧拷锟斤拷锟?
 			ExpStack.push(*tempExpStack);
 		}
 		EqExp();
@@ -1600,28 +1600,28 @@ void RelExp()
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 5;
-			tempExpStack->value = 3; //��С��
+			tempExpStack->value = 3; //锟斤拷小锟斤拷
 			ExpStack.push(*tempExpStack);
 		}
 		else if (tempSym.type == 65)
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 5;
-			tempExpStack->value = 4; //�Ǵ���
+			tempExpStack->value = 4; //锟角达拷锟斤拷
 			ExpStack.push(*tempExpStack);
 		}
 		else if (tempSym.type == 69)
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 5;
-			tempExpStack->value = 5; //��С�ڵ���
+			tempExpStack->value = 5; //锟斤拷小锟节碉拷锟斤拷
 			ExpStack.push(*tempExpStack);
 		}
 		else
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 5;
-			tempExpStack->value = 6; //�Ǵ��ڵ���
+			tempExpStack->value = 6; //锟角达拷锟节碉拷锟斤拷
 			ExpStack.push(*tempExpStack);
 		}
 		AddExp();
@@ -1810,7 +1810,7 @@ void OperationUnaryOp()
 	struct ExpElem op = ExpStack.top();
 	ExpStack.pop();
 
-	//�Ѿ��������ļӼ�����
+	//锟窖撅拷锟斤拷锟斤拷锟斤拷锟侥加硷拷锟斤拷锟斤拷
 	if (op.type != 4)
 	{
 		ExpStack.push(op);
@@ -1929,7 +1929,7 @@ void OperationCond()
 
 int GlobalAddExp() {
 	int RetNum = GlobalMulExp();
-	if (sym[symst].type == 59|| sym[symst].type == 62) {    //������һ���ʣ��ж��Ƿ���ȷ 
+	if (sym[symst].type == 59|| sym[symst].type == 62) {    //锟斤拷锟斤拷锟斤拷一锟斤拷锟绞ｏ拷锟叫讹拷锟角凤拷锟斤拷确 
 		symNow = sym[symst++];
 	}
 	while (symNow.type == 59|| symNow.type == 62) {
@@ -1941,7 +1941,7 @@ int GlobalAddExp() {
 		else{
 			RetNum -= GlobalMulExp(); 
 		}
-		if (sym[symst].type == 59|| sym[symst].type == 62) {  //������һ���ʣ��ж��Ƿ���ȷ 
+		if (sym[symst].type == 59|| sym[symst].type == 62) {  //锟斤拷锟斤拷锟斤拷一锟斤拷锟绞ｏ拷锟叫讹拷锟角凤拷锟斤拷确 
 			symNow = sym[symst++];
 		}
 	}
@@ -1949,7 +1949,7 @@ int GlobalAddExp() {
 }
 int GlobalMulExp() {
 	int RetNum = GlobalUnaryExp();
-	if (sym[symst].type == 60 || sym[symst].type == 61 || sym[symst].type == 63) {  //������һ���ʣ��ж��Ƿ���ȷ 
+	if (sym[symst].type == 60 || sym[symst].type == 61 || sym[symst].type == 63) {  //锟斤拷锟斤拷锟斤拷一锟斤拷锟绞ｏ拷锟叫讹拷锟角凤拷锟斤拷确 
 		symNow = sym[symst++];
 	}
 	while (symNow.type == 60 || symNow.type == 61 || symNow.type == 63) {
@@ -1964,7 +1964,7 @@ int GlobalMulExp() {
 		else{
 			RetNum %= GlobalUnaryExp();
 		}
-		if (sym[symst].type == 60 || sym[symst].type == 61 || sym[symst].type == 63) {  //������һ���ʣ��ж��Ƿ���ȷ 
+		if (sym[symst].type == 60 || sym[symst].type == 61 || sym[symst].type == 63) {  //锟斤拷锟斤拷锟斤拷一锟斤拷锟绞ｏ拷锟叫讹拷锟角凤拷锟斤拷确 
 			symNow = sym[symst++];
 		}
 	}
@@ -1975,7 +1975,7 @@ int GlobalUnaryExp() {
 	//UnaryOp() 
 	if (symNow.type == 59|| symNow.type == 62) {
 		int PositiveNum=1;
-		if (symNow.type == 59) {        //����һ��+-�ţ����Դ����ж�Number������ 
+		if (symNow.type == 59) {        //锟斤拷锟斤拷一锟斤拷+-锟脚ｏ拷锟斤拷锟皆达拷锟斤拷锟叫讹拷Number锟斤拷锟斤拷锟斤拷 
 			PositiveNum=PositiveNum;
 		}
 		else {
@@ -2022,7 +2022,7 @@ int GlobalPrimaryExp() {
 			throw "Error";
 		}
 		if ((*varIt).second.isConst)
-		{ //��������ǳ���?
+		{ //锟斤拷锟斤拷锟斤拷锟斤拷浅锟斤拷锟?
 			LvalIsConst = true;
 		}
 		else{

@@ -667,19 +667,37 @@ int ConstDef()
 		if (ret != 0)
 			return ret;
 		tempExpStack = &ExpStack.top();
-		if (tempExpStack->type == 1)
-		{
-			fprintf(fpout, "    store i32 %d, i32* %%x%d\n", tempExpStack->value, tempVarItem->registerNum);
+		if(tempVarItem->registerNum<9999){
+			if (tempExpStack->type == 1)
+			{
+				fprintf(fpout, "    store i32 %d, i32* %%x%d\n", tempExpStack->value, tempVarItem->registerNum);
+			}
+			else if (tempExpStack->type == 3)
+			{
+				fprintf(fpout, "    store i32 %%x%d, i32* %%x%d\n", tempExpStack->value, tempVarItem->registerNum);
+			}
+			else
+			{
+				printf("error in VarDef()");
+				throw "Error";
+				return ret;
+			}
 		}
-		else if (tempExpStack->type == 3)
-		{
-			fprintf(fpout, "    store i32 %%x%d, i32* %%x%d\n", tempExpStack->value, tempVarItem->registerNum);
-		}
-		else
-		{
-			printf("error in VarDef()");
-			throw "Error";
-			return ret;
+		else if(tempVarItem->registerNum>9999){
+			if (tempExpStack->type == 1)
+			{
+				fprintf(fpout, "    store i32 %d, i32* @x%d\n", tempExpStack->value, tempVarItem->registerNum);
+			}
+			else if (tempExpStack->type == 3)
+			{
+				fprintf(fpout, "    store i32 %%x%d, i32* @x%d\n", tempExpStack->value, tempVarItem->registerNum);
+			}
+			else
+			{
+				printf("error in VarDef()");
+				throw "Error";
+				return ret;
+			}
 		}
 		ExpStack.pop();
 	}

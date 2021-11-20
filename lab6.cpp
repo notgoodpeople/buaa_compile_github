@@ -198,7 +198,6 @@ int getToken()
 	while (fgets(str, 3000, fpin) != NULL)
 	{
 		memset(token, 0, sizeof(token));
-		printf("%s",str);
 		int iskey = 0;
 		sst = 0;
 		while (sst < strlen(str))
@@ -1060,9 +1059,18 @@ int Stmt()
 		}
 		symNow = sym[symst++];
 		if (symNow.type != 52)
-		{
-			printf("error in Stmt '='");
-			throw "Error";
+		{        //Stmt         ->  [Exp] ';'
+			symNow = sym[symst-2];
+			symst-=1;
+			Exp();
+			//ExpStack.pop();
+			symNow = sym[symst++];
+			if (symNow.type != 54)
+			{
+				printf("error in Stmt ';'");
+				throw "Error";
+			}
+			return 0;
 		}
 
 		symNow = sym[symst++];
@@ -1169,6 +1177,22 @@ int Stmt()
 				condCountFalseStack.pop();
 				fprintf(fpout, "f_%d:\n", tem);
 				fprintf(fpout, "    br label %%m_%d\n\n", mainCount);
+			}
+		}
+		else{
+			if (!condCountTrueStack.empty())
+			{
+				int tem = condCountTrueStack.top();
+				condCountTrueStack.pop();
+				fprintf(fpout, "t_%d:\n", tem);
+				fprintf(fpout, "    br label %%m_%d\n", (mainCount+1));
+			}
+			if (!condCountFalseStack.empty())
+			{
+				int tem = condCountFalseStack.top();
+				condCountFalseStack.pop();
+				fprintf(fpout, "f_%d:\n", tem);
+				fprintf(fpout, "    br label %%m_%d\n\n", (mainCount+1));
 			}
 		}
 		fprintf(fpout, "m_%d:\n", mainCount);

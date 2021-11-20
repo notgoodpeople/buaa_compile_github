@@ -77,15 +77,16 @@ int GVarMapst = 10000;  //当前全局变量寄存器的值,和局部变量寄�
 // map<int, struct CondBlock> CondBlockMap;  //map[type]的num到多少了。
 int condCount = 1; //该是第几个cond块了
 bool condHasIcmp = false;
+//以下的栈是用来fprintf跳转label的栈
 stack<int> condCountFalseStack;
 stack<int> condCountTrueStack;
 stack<int> whileCountFalseStack;
 stack<int> whileCountTrueStack;
+stack<int> continueCountTrueStack;
 map<bool, int> condCountMap; //没有用到，用bool值来判断条件变量块的编号
 
 int mainCount = 1; //准备从条件语句或者循环中，返回上一层，上一层的序号 m_{{maincount}}
 int whileCondCount = 1; // 循环中的Cond的编号
-bool IsWhile = false; //在循环内的false_Block,跳到上一层的外面，和if_block不一样的
 struct FuncItem
 {
 	int RetType;		//函数返回类型 1为int 0为void
@@ -1191,6 +1192,7 @@ int Stmt()
 			throw "Error";
 		}
 		fprintf(fpout,"    br label %%c_%d\n\n",whileCondCount);
+		continueCountTrueStack.push(whileCondCount);
 		symNow = sym[symst++];
 		fprintf(fpout, "c_%d:\n",whileCondCount);
 		int tempWhileCount = whileCondCount;
@@ -1213,9 +1215,8 @@ int Stmt()
 		int tem = whileCountTrueStack.top();
 		whileCountTrueStack.pop();
 		fprintf(fpout, "t_%d:\n", tem);
-		IsWhile = true;
 		Stmt();
-		IsWhile = false;
+		continueCountTrueStack.pop();
 		fprintf(fpout, "    br label %%c_%d\n",tempWhileCount);
 		if (!whileCountTrueStack.empty())
 		{
@@ -1242,6 +1243,8 @@ int Stmt()
 			printf("error in Stmt Break ';'");
 			throw "Error";
 		}
+		int tem = whileCountFalseStack.top();
+		fprintf(fpout, "    br label %%f_%d\n", tem);
 	}
 	else if(symNow.type == 9){ //continue
 		symNow = sym[symst++];
@@ -1250,6 +1253,8 @@ int Stmt()
 			printf("error in Stmt Continue ';'");
 			throw "Error";
 		}
+		int tem = continueCountTrueStack.top();
+		fprintf(fpout, "    br label %%c_%d\n", tem);
 	}
 	else if (symNow.type == 57)
 	{ //Block

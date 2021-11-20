@@ -79,6 +79,8 @@ int condCount = 1; //该是第几个cond块了
 bool condHasIcmp = false;
 stack<int> condCountFalseStack;
 stack<int> condCountTrueStack;
+stack<int> whileCountFalseStack;
+stack<int> whileCountTrueStack;
 map<bool, int> condCountMap; //没有用到，用bool值来判断条件变量块的编号
 
 int mainCount = 1; //准备从条件语句或者循环中，返回上一层，上一层的序号 m_{{maincount}}
@@ -1163,7 +1165,6 @@ int Stmt()
 			fprintf(fpout, "    br label %%m_%d\n", mainCount);
 			fprintf(fpout, "\n");
 		}
-		if(!IsWhile){
 			if (!condCountTrueStack.empty())
 			{
 				int tem = condCountTrueStack.top();
@@ -1178,23 +1179,6 @@ int Stmt()
 				fprintf(fpout, "f_%d:\n", tem);
 				fprintf(fpout, "    br label %%m_%d\n\n", mainCount);
 			}
-		}
-		else{
-			if (!condCountTrueStack.empty())
-			{
-				int tem = condCountTrueStack.top();
-				condCountTrueStack.pop();
-				fprintf(fpout, "t_%d:\n", tem);
-				fprintf(fpout, "    br label %%m_%d\n", (mainCount+1));
-			}
-			if (!condCountFalseStack.empty())
-			{
-				int tem = condCountFalseStack.top();
-				condCountFalseStack.pop();
-				fprintf(fpout, "f_%d:\n", tem);
-				fprintf(fpout, "    br label %%m_%d\n\n", (mainCount+1));
-			}
-		}
 		fprintf(fpout, "m_%d:\n", mainCount);
 		mainCount++;
 		return 0;
@@ -1215,9 +1199,9 @@ int Stmt()
 		tempExpStack = &ExpStack.top();
 		fprintf(fpout, "    br i1 %%x%d, label %%t_%d, label %%f_%d\n\n", tempExpStack->value, condCount, (condCount + 1));
 		condCountMap[true] = condCount;
-		condCountTrueStack.push(condCount);
+		whileCountTrueStack.push(condCount);
 		condCountMap[false] = condCount + 1;
-		condCountFalseStack.push(condCount + 1);
+		whileCountFalseStack.push(condCount + 1);
 		condCount += 2;
 		symNow = sym[symst++];
 		if (symNow.type != 56)
@@ -1226,24 +1210,24 @@ int Stmt()
 			throw "Error";
 		}
 		symNow = sym[symst++];
-		int tem = condCountTrueStack.top();
-		condCountTrueStack.pop();
+		int tem = whileCountTrueStack.top();
+		whileCountTrueStack.pop();
 		fprintf(fpout, "t_%d:\n", tem);
 		IsWhile = true;
 		Stmt();
 		IsWhile = false;
 		fprintf(fpout, "    br label %%c_%d\n",tempWhileCount);
-		if (!condCountTrueStack.empty())
+		if (!whileCountTrueStack.empty())
 		{
-			int tem = condCountTrueStack.top();
-			condCountTrueStack.pop();
+			int tem = whileCountTrueStack.top();
+			whileCountTrueStack.pop();
 			fprintf(fpout, "t_%d:\n", tem);
 			fprintf(fpout, "    br label %%m_%d\n",mainCount);
 		}
-		if (!condCountFalseStack.empty())
+		if (!whileCountFalseStack.empty())
 		{
-			int tem = condCountFalseStack.top();
-			condCountFalseStack.pop();
+			int tem = whileCountFalseStack.top();
+			whileCountFalseStack.pop();
 			fprintf(fpout, "f_%d:\n", tem);
 			fprintf(fpout, "    br label %%m_%d\n\n", mainCount);
 		}

@@ -2096,10 +2096,12 @@ int LVal()
 	int base = 0;	   //括号数
 	int tempindex = 0; //偏移数
 	int temp = 1;	   //偏移基数
+	int bracketCheck = 0;  //检测维数是否正确
 	while (symNow.type == 72)
 	{
 		symNow = sym[symst++];
 		base++;
+		bracketCheck++;
 		temp = 1;
 		int result = GlobalAddExp();
 		//fprintf(fpout,"Lval Exp here\n");
@@ -2118,6 +2120,10 @@ int LVal()
 		{ //{'[' Exp ']'}
 			symNow = sym[symst++];
 		}
+	}
+	if(bracketCheck != (*varIt).second.dimension){
+		printf("Lval数组的维数错误");
+		throw "Error";
 	}
 	if ((*varIt).second.isConst)
 	{ //这个变量是常量

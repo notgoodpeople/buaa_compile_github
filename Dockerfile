@@ -1,5 +1,5 @@
 From gcc:10.2
 WORKDIR  /app/
-COPY lab6.cpp ./
-RUN g++ lab6.cpp -o lab6
-RUN chmod +x lab6
+COPY lab7.cpp ./
+RUN g++ lab6.cpp -o lab7
+RUN chmod +x lab7

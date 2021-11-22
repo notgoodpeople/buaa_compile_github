@@ -684,11 +684,8 @@ int ConstDef()
 		struct VarItem *tempVarItem = (struct VarItem *)malloc(sizeof(struct VarItem));
 		tempVarItem->isConst = true;
 		tempVarItem->registerNum = ++VarMapSt;
-		BVarMap[symNow.name] = *tempVarItem;
-
-		fprintf(fpout, "    %%x%d = alloca i32\n", VarMapSt);
-
-		//可能是数组
+		string tempName = symNow.name;
+		int tempDimesion = 0;
 		if (sym[symst].type == 72)
 		{
 			symNow = sym[symst++];
@@ -696,7 +693,8 @@ int ConstDef()
 		while (symNow.type == 72)
 		{
 			symNow = sym[symst++];
-			ConstExp();
+			tempVarItem->d[tempDimesion] = GlobalAddExp();
+			tempDimesion++;
 			symNow = sym[symst++];
 			if (symNow.type != 73)
 			{
@@ -708,59 +706,97 @@ int ConstDef()
 				symNow = sym[symst++];
 			}
 		}
+		if (tempDimesion != 0) //是数组
+		{
+			tempVarItem->dimension = tempDimesion;
+			int arraySize = 1;
+			for (int i = 0; i < tempDimesion; i++)
+			{
+				arraySize *= tempVarItem->d[i];
+			}
+			tempVarItem->arraySize = arraySize;
+			BVarMap[tempName] = *tempVarItem;
+			arrayDecl = tempVarItem; //把当前的数组变量信息留到InitVal用
+			if (tempDimesion == 0)
+				fprintf(fpout, "    %%x%d = alloca i32\n", VarMapSt);
+			else
+			{
+				int tempVarMapSt = VarMapSt;
+				fprintf(fpout, "    %%x%d = alloca [%d x i32]\n", VarMapSt++, arraySize);
+				fprintf(fpout, "    %%x%d = getelementptr [%d x i32], [%d x i32]* %%x%d, i32 0, i32 0\n", VarMapSt, arraySize, arraySize, tempVarMapSt);
+				fprintf(fpout, "    call void @memset(i32*  %%x%d,i32 0,i32 %d)\n", VarMapSt, arraySize);
+			}
 
-		symNow = sym[symst++];
-		if (symNow.type != 52)
-		{
-			printf("error in ConstDef() '=' ");
-			throw "Error";
+			if (sym[symst].type == 52)
+				symNow = sym[symst++];
+			if (symNow.type != 52)
+			{
+				return 0;
+			}
+			baseNum = 0;
+			index = 0;
+			symNow = sym[symst++];
+			arrayDef = true;
+			ret = ConstInitVal();
+			// if (ret != 0)
+			// 	return ret;
 		}
-		symNow = sym[symst++];
-		ret = ConstInitVal();
-		// if (ret != 0)
-		// 	return ret;
-		tempExpStack = &ExpStack.top();
-		if (tempVarItem->registerNum < 9999)
-		{
-			if (tempExpStack->type == 1)
+		else{
+			BVarMap[symNow.name] = *tempVarItem;
+			fprintf(fpout, "    %%x%d = alloca i32\n", VarMapSt);
+			symNow = sym[symst++];
+			if (symNow.type != 52)
 			{
-				fprintf(fpout, "    store i32 %d, i32* %%x%d\n", tempExpStack->value, tempVarItem->registerNum);
-			}
-			else if (tempExpStack->type == 3)
-			{
-				fprintf(fpout, "    store i32 %%x%d, i32* %%x%d\n", tempExpStack->value, tempVarItem->registerNum);
-			}
-			else
-			{
-				printf("error in ConstDef()");
+				printf("error in ConstDef() '=' ");
 				throw "Error";
-				return ret;
 			}
+			symNow = sym[symst++];
+			ret = ConstInitVal();
+			// if (ret != 0)
+			// 	return ret;
+			tempExpStack = &ExpStack.top();
+			if (tempVarItem->registerNum < 9999)
+			{
+				if (tempExpStack->type == 1)
+				{
+					fprintf(fpout, "    store i32 %d, i32* %%x%d\n", tempExpStack->value, tempVarItem->registerNum);
+				}
+				else if (tempExpStack->type == 3)
+				{
+					fprintf(fpout, "    store i32 %%x%d, i32* %%x%d\n", tempExpStack->value, tempVarItem->registerNum);
+				}
+				else
+				{
+					printf("error in ConstDef()");
+					throw "Error";
+					return ret;
+				}
+			}
+			else if (tempVarItem->registerNum > 9999)
+			{
+				if (tempExpStack->type == 1)
+				{
+					fprintf(fpout, "    store i32 %d, i32* @x%d\n", tempExpStack->value, tempVarItem->registerNum);
+				}
+				else if (tempExpStack->type == 3)
+				{
+					fprintf(fpout, "    store i32 %%x%d, i32* @x%d\n", tempExpStack->value, tempVarItem->registerNum);
+				}
+				else
+				{
+					printf("error in ConstDef()");
+					throw "Error";
+					return ret;
+				}
+			}
+			ExpStack.pop();
 		}
-		else if (tempVarItem->registerNum > 9999)
-		{
-			if (tempExpStack->type == 1)
-			{
-				fprintf(fpout, "    store i32 %d, i32* @x%d\n", tempExpStack->value, tempVarItem->registerNum);
-			}
-			else if (tempExpStack->type == 3)
-			{
-				fprintf(fpout, "    store i32 %%x%d, i32* @x%d\n", tempExpStack->value, tempVarItem->registerNum);
-			}
-			else
-			{
-				printf("error in ConstDef()");
-				throw "Error";
-				return ret;
-			}
-		}
-		ExpStack.pop();
 	}
 	else if (symNow.type == 22 && GlobalDef == true)
 	{
 		if ((GVarMap.count(symNow.name)) == 1)
 		{
-			printf("error in ConstDef() GVarMap");
+			printf("error in VarDef() GVarMap");
 			throw "Error";
 		}
 		struct VarItem *tempVarItem = (struct VarItem *)malloc(sizeof(struct VarItem));
@@ -768,8 +804,7 @@ int ConstDef()
 		tempVarItem->registerNum = ++GVarMapst;
 		tempVarItem->globalNum = 0;
 		string tempName = symNow.name;
-
-		//可能是数组，未修改
+		int tempDimesion = 0;
 		if (sym[symst].type == 72)
 		{
 			symNow = sym[symst++];
@@ -777,7 +812,8 @@ int ConstDef()
 		while (symNow.type == 72)
 		{
 			symNow = sym[symst++];
-			ConstExp();
+			tempVarItem->d[tempDimesion] = GlobalAddExp();
+			tempDimesion++;
 			symNow = sym[symst++];
 			if (symNow.type != 73)
 			{
@@ -789,24 +825,61 @@ int ConstDef()
 				symNow = sym[symst++];
 			}
 		}
-
-		if (sym[symst].type == 54 || sym[symst].type == 53)
-		{ //没有初始化
-			GVarMap[tempName] = *tempVarItem;
-			fprintf(fpout, "@x%d = dso_local global i32 %d\n", GVarMapst, tempVarItem->globalNum);
-			return 0;
-		}
-		symNow = sym[symst++];
-		if (symNow.type != 52)
+		if (tempDimesion != 0) //是数组
 		{
-			printf("error in ConstDef() Global '=' ");
-			throw "Error";
+			tempVarItem->dimension = tempDimesion;
+			int arraySize = 1;
+			for (int i = 0; i < tempDimesion; i++)
+			{
+				arraySize *= tempVarItem->d[i];
+			}
+			tempVarItem->arraySize = arraySize;
+			GVarMap[tempName] = *tempVarItem;
+			arrayDecl = tempVarItem; //把当前的数组变量信息留到InitVal用
+			if (sym[symst].type == 54 || sym[symst].type == 53)
+			{
+				fprintf(fpout, "@x%d = dso_local global [%d x i32] zeroinitializer\n", GVarMapst, arraySize);
+				return 0;
+			}
+			symNow = sym[symst++];
+			if (symNow.type != 52)
+			{
+				printf("error in VarDef() Global array '=' ");
+				throw "Error";
+			}
+			baseNum = 0;
+			index = 0;
+			symNow = sym[symst++];
+			arrayDef = true;
+			memset(tempArr, 0, 1000*sizeof(int));
+			if(arraySize>=950){
+				printf("tempArr数组开小了");
+			}
+			ret = ConstInitVal();
+			fprintf(fpout, "@x%d = dso_local global [%d x i32] [",GVarMapst, arraySize);
+			for(int i=0;i<arraySize-1;i++){
+				fprintf(fpout, "i32 %d, ", tempArr[i]);
+			}
+			fprintf(fpout,"i32 %d]\n",tempArr[arraySize-1]);
 		}
-		symNow = sym[symst++];
-		int resultNum = ConstInitVal();
-		tempVarItem->globalNum = resultNum;
-		GVarMap[tempName] = *tempVarItem;
-		fprintf(fpout, "@x%d = dso_local global i32 %d\n", GVarMapst, resultNum);
+		else{
+			if(sym[symst].type == 54 || sym[symst].type == 53){     //没有初始化
+			GVarMap[tempName] = *tempVarItem;
+			fprintf(fpout,"@x%d = dso_local global i32 %d\n",GVarMapst,tempVarItem->globalNum);
+			return 0;
+			}
+			symNow = sym[symst++];
+			if (symNow.type != 52)
+			{
+				printf("error in ConstDef() Global '=' ");
+				throw "Error";
+			}
+			symNow = sym[symst++];
+			int resultNum = ConstInitVal();
+			tempVarItem->globalNum = resultNum;
+			GVarMap[tempName] = *tempVarItem;
+			fprintf(fpout,"@x%d = dso_local global i32 %d\n",GVarMapst,resultNum);
+		}
 	}
 	else
 	{
@@ -819,38 +892,81 @@ int ConstInitVal()
 {
 	if (GlobalDef == false)
 	{
-		if (symNow.type == 57)
-		{ //
-			symNow = sym[symst++];
-			if (symNow.type == 58)
-			{ //xxx = {}
-				return 0;
-			}
-			else
-			{
-				ConstInitVal();
-				if (sym[symst].type == 53)
-				{
-					symNow = sym[symst++];
+		if (arrayDef)
+		{
+			if (symNow.type == 57)
+			{ //花括号  数组初始化
+				symNow = sym[symst++];
+				baseNum++;
+				if (symNow.type == 58)
+				{ //xxx = {}
+					return 0;
 				}
-				while (symNow.type == 53)
+				else
 				{
-					symNow = sym[symst++];
 					ConstInitVal();
 					if (sym[symst].type == 53)
 					{
 						symNow = sym[symst++];
 					}
-				}
-				symNow = sym[symst++];
-				if (symNow.type != 58)
-				{
-					printf("error in ConstInitVal 数组 }");
-					throw "Error";
+					int savedIndex = index;
+					while (symNow.type == 53)
+					{ //同一个花括号内，逗号右移一位
+						symNow = sym[symst++];
+						int temp = 1;
+						for (int i = arrayDecl->dimension - 1; i >= baseNum; i--)
+						{
+							temp *= arrayDecl->d[i];
+						}
+						index += temp;
+						InitVal();
+						if (sym[symst].type == 53)
+						{
+							symNow = sym[symst++];
+						}
+					}
+					symNow = sym[symst++];
+					if (symNow.type != 58)
+					{
+						printf("error in InitVal 数组 }");
+						throw "Error";
+					}
+					index = savedIndex;
+					baseNum--;
 				}
 			}
+			else
+			{ //ConstInitVal -> ConstExp
+				fprintf(fpout, "    %%x%d = getelementptr [%d x i32], [%d x i32]* %%x%d, i32 0, i32 %d\n", ++VarMapSt, arrayDecl->arraySize, arrayDecl->arraySize, arrayDecl->registerNum, index);
+				int tempVarSt = VarMapSt;
+				VarInInit = false;
+				ConstExp();
+				if (VarInInit) //常量初始化不能用变量
+				{
+					throw "Error";
+				}
+				tempExpStack = &ExpStack.top();
+				if (arrayDecl->registerNum < 9999)
+				{
+					if (tempExpStack->type == 1)
+					{
+						fprintf(fpout, "    store i32 %d, i32* %%x%d\n", tempExpStack->value, tempVarSt);
+					}
+					else if (tempExpStack->type == 3)
+					{
+						fprintf(fpout, "    store i32 %%x%d, i32* %%x%d\n", tempExpStack->value, tempVarSt);
+					}
+					else
+					{
+						printf("error in InitVal 数组");
+						throw "Error";
+						return ret;
+					}
+				}
+				ExpStack.pop();
+				return 0;
+			}
 		}
-
 		else
 		{ //ConstInitVal -> ConstExp
 			VarInInit = false;
@@ -861,37 +977,62 @@ int ConstInitVal()
 			}
 		}
 	}
-	else
+	else   //GLOBAL
 	{
-		if (symNow.type == 57)
+		if (arrayDef)
 		{
-			symNow = sym[symst++];
-			if (symNow.type == 58)
-			{ //xxx = {}
-				return 0;
-			}
-			else
+			if (symNow.type == 57)
 			{
-				ConstInitVal();
-				if (sym[symst].type == 53)
-				{
-					symNow = sym[symst++];
+				baseNum++;
+				symNow = sym[symst++];
+				if (symNow.type == 58)
+				{ //xxx = {}
+					return 0;
 				}
-				while (symNow.type == 53)
+				else
 				{
-					symNow = sym[symst++];
-					ConstInitVal();
+					InitVal();
 					if (sym[symst].type == 53)
 					{
 						symNow = sym[symst++];
 					}
+					int savedIndex = index;
+					while (symNow.type == 53)
+					{ //同一个花括号内，逗号右移一位
+						symNow = sym[symst++];
+						int temp = 1;
+						for (int i = arrayDecl->dimension - 1; i >= baseNum; i--)
+						{
+							temp *= arrayDecl->d[i];
+						}
+						index += temp;
+						InitVal();
+						if (sym[symst].type == 53)
+						{
+							symNow = sym[symst++];
+						}
+					}
+					symNow = sym[symst++];
+					if (symNow.type != 58)
+					{
+						printf("error in InitVal Global数组 }");
+						throw "Error";
+					}
+					index = savedIndex;
+					baseNum--;
 				}
-				symNow = sym[symst++];
-				if (symNow.type != 58)
-				{
-					printf("error in ConstInitVal 数组 }");
+			}
+			else{
+				VarInInit = false;
+				int tempVarSt = VarMapSt;
+				int tempAns = GlobalAddExp();
+				if (VarInInit)
+				{ //全局变量初始化不能用变量
+					printf("全局变量初始化不能用变量");
 					throw "Error";
 				}
+				tempArr[index] = tempAns;
+				return 0;
 			}
 		}
 		else
@@ -991,7 +1132,7 @@ int VarDef()
 			int arraySize = 1;
 			for (int i = 0; i < tempDimesion; i++)
 			{
-				arraySize *= tempVarItem->d[0];
+				arraySize *= tempVarItem->d[i];
 			}
 			tempVarItem->arraySize = arraySize;
 			BVarMap[tempName] = *tempVarItem;
@@ -1113,7 +1254,7 @@ int VarDef()
 			int arraySize = 1;
 			for (int i = 0; i < tempDimesion; i++)
 			{
-				arraySize *= tempVarItem->d[0];
+				arraySize *= tempVarItem->d[i];
 			}
 			tempVarItem->arraySize = arraySize;
 			GVarMap[tempName] = *tempVarItem;
@@ -1964,7 +2105,7 @@ int LVal()
 		//fprintf(fpout,"Lval Exp here\n");
 		for (int i = tempDimension - 1; i >= base; i--)
 		{
-			temp *= arrayDecl->d[i];
+			temp *= (*varIt).second.d[i];
 		}
 		tempindex += result * temp;
 		symNow = sym[symst++];

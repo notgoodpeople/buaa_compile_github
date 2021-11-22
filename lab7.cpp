@@ -62,7 +62,7 @@ struct VarItem
 	int d[10];		 // 如a[3][4]的数组，则d[0]=3 d[1]=4
 	int arraySize;	 //对于数组 数组的大小
 };
-int index = 0;								 //多维数组初始化时的偏移量
+int Offset = 0;								 //多维数组初始化时的偏移量
 int baseNum = 0;							 //多维数组偏移量计算中使用的，代表左花括号个数的值
 bool arrayDef = false;						 //在init时，判断调用init函数的是不是array
 int tempArr[1000];                           //在init全局数组时使用的临时数组。
@@ -734,7 +734,7 @@ int ConstDef()
 				return 0;
 			}
 			baseNum = 0;
-			index = 0;
+			Offset = 0;
 			symNow = sym[symst++];
 			arrayDef = true;
 			ret = ConstInitVal();
@@ -848,7 +848,7 @@ int ConstDef()
 				throw "Error";
 			}
 			baseNum = 0;
-			index = 0;
+			Offset = 0;
 			symNow = sym[symst++];
 			arrayDef = true;
 			memset(tempArr, 0, 1000*sizeof(int));
@@ -909,7 +909,7 @@ int ConstInitVal()
 					{
 						symNow = sym[symst++];
 					}
-					int savedIndex = index;
+					int savedIndex = Offset;
 					while (symNow.type == 53)
 					{ //同一个花括号内，逗号右移一位
 						symNow = sym[symst++];
@@ -918,7 +918,7 @@ int ConstInitVal()
 						{
 							temp *= arrayDecl->d[i];
 						}
-						index += temp;
+						Offset += temp;
 						InitVal();
 						if (sym[symst].type == 53)
 						{
@@ -931,13 +931,13 @@ int ConstInitVal()
 						printf("error in InitVal 数组 }");
 						throw "Error";
 					}
-					index = savedIndex;
+					Offset = savedIndex;
 					baseNum--;
 				}
 			}
 			else
 			{ //ConstInitVal -> ConstExp
-				fprintf(fpout, "    %%x%d = getelementptr [%d x i32], [%d x i32]* %%x%d, i32 0, i32 %d\n", ++VarMapSt, arrayDecl->arraySize, arrayDecl->arraySize, arrayDecl->registerNum, index);
+				fprintf(fpout, "    %%x%d = getelementptr [%d x i32], [%d x i32]* %%x%d, i32 0, i32 %d\n", ++VarMapSt, arrayDecl->arraySize, arrayDecl->arraySize, arrayDecl->registerNum, Offset);
 				int tempVarSt = VarMapSt;
 				VarInInit = false;
 				ConstExp();
@@ -996,7 +996,7 @@ int ConstInitVal()
 					{
 						symNow = sym[symst++];
 					}
-					int savedIndex = index;
+					int savedIndex = Offset;
 					while (symNow.type == 53)
 					{ //同一个花括号内，逗号右移一位
 						symNow = sym[symst++];
@@ -1005,7 +1005,7 @@ int ConstInitVal()
 						{
 							temp *= arrayDecl->d[i];
 						}
-						index += temp;
+						Offset += temp;
 						InitVal();
 						if (sym[symst].type == 53)
 						{
@@ -1018,7 +1018,7 @@ int ConstInitVal()
 						printf("error in InitVal Global数组 }");
 						throw "Error";
 					}
-					index = savedIndex;
+					Offset = savedIndex;
 					baseNum--;
 				}
 			}
@@ -1031,7 +1031,7 @@ int ConstInitVal()
 					printf("全局变量初始化不能用变量");
 					throw "Error";
 				}
-				tempArr[index] = tempAns;
+				tempArr[Offset] = tempAns;
 				return 0;
 			}
 		}
@@ -1154,7 +1154,7 @@ int VarDef()
 				return 0;
 			}
 			baseNum = 0;
-			index = 0;
+			Offset = 0;
 			symNow = sym[symst++];
 			arrayDef = true;
 			ret = InitVal();
@@ -1271,7 +1271,7 @@ int VarDef()
 				throw "Error";
 			}
 			baseNum = 0;
-			index = 0;
+			Offset = 0;
 			symNow = sym[symst++];
 			arrayDef = true;
 			memset(tempArr, 0, 1000*sizeof(int));
@@ -1335,7 +1335,7 @@ int InitVal()
 					{
 						symNow = sym[symst++];
 					}
-					int savedIndex = index;
+					int savedIndex = Offset;
 					while (symNow.type == 53)
 					{ //同一个花括号内，逗号右移一位
 						symNow = sym[symst++];
@@ -1344,7 +1344,7 @@ int InitVal()
 						{
 							temp *= arrayDecl->d[i];
 						}
-						index += temp;
+						Offset += temp;
 						InitVal();
 						if (sym[symst].type == 53)
 						{
@@ -1357,13 +1357,13 @@ int InitVal()
 						printf("error in InitVal 数组 }");
 						throw "Error";
 					}
-					index = savedIndex;
+					Offset = savedIndex;
 					baseNum--;
 				}
 			}
 			else
 			{ //ConstInitVal -> ConstExp
-				fprintf(fpout, "    %%x%d = getelementptr [%d x i32], [%d x i32]* %%x%d, i32 0, i32 %d\n", ++VarMapSt, arrayDecl->arraySize, arrayDecl->arraySize, arrayDecl->registerNum, index);
+				fprintf(fpout, "    %%x%d = getelementptr [%d x i32], [%d x i32]* %%x%d, i32 0, i32 %d\n", ++VarMapSt, arrayDecl->arraySize, arrayDecl->arraySize, arrayDecl->registerNum, Offset);
 				int tempVarSt = VarMapSt;
 				int tempAns = Exp();
 				tempExpStack = &ExpStack.top();
@@ -1413,7 +1413,7 @@ int InitVal()
 					{
 						symNow = sym[symst++];
 					}
-					int savedIndex = index;
+					int savedIndex = Offset;
 					while (symNow.type == 53)
 					{ //同一个花括号内，逗号右移一位
 						symNow = sym[symst++];
@@ -1422,7 +1422,7 @@ int InitVal()
 						{
 							temp *= arrayDecl->d[i];
 						}
-						index += temp;
+						Offset += temp;
 						InitVal();
 						if (sym[symst].type == 53)
 						{
@@ -1435,7 +1435,7 @@ int InitVal()
 						printf("error in InitVal Global数组 }");
 						throw "Error";
 					}
-					index = savedIndex;
+					Offset = savedIndex;
 					baseNum--;
 				}
 			}
@@ -1448,7 +1448,7 @@ int InitVal()
 					printf("全局变量初始化不能用变量");
 					throw "Error";
 				}
-				tempArr[index] = tempAns;
+				tempArr[Offset] = tempAns;
 				return 0;
 			}
 		}

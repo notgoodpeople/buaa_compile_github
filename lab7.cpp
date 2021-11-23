@@ -209,7 +209,6 @@ int getToken()
 	while (fgets(str, 3000, fpin) != NULL)
 	{
 		memset(token, 0, sizeof(token));
-		printf("%s",str);
 		int iskey = 0;
 		sst = 0;
 		while (sst < strlen(str))
@@ -2167,7 +2166,7 @@ int LVal()
 
 	if (isArray)
 	{
-		if(!IsGlobalVal)
+		if((*varIt).second.registerNum<=9999)
 			fprintf(fpout, "    %%x%d = getelementptr [%d x i32], [%d x i32]* %%x%d, i32 0, i32 %%x%d\n", ++VarMapSt, (*varIt).second.arraySize, (*varIt).second.arraySize, (*varIt).second.registerNum, VarMapSt);
 		else fprintf(fpout, "    %%x%d = getelementptr [%d x i32], [%d x i32]* @x%d, i32 0, i32 %%x%d\n", ++VarMapSt, (*varIt).second.arraySize, (*varIt).second.arraySize, (*varIt).second.registerNum, VarMapSt);
 		IsGlobalVal = false;  //防止load的时候使用全局变量的输出

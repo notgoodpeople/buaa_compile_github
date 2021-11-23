@@ -725,7 +725,7 @@ int ConstDef()
 				int tempVarMapSt = VarMapSt;
 				fprintf(fpout, "    %%x%d = alloca [%d x i32]\n", VarMapSt++, arraySize);
 				fprintf(fpout, "    %%x%d = getelementptr [%d x i32], [%d x i32]* %%x%d, i32 0, i32 0\n", VarMapSt, arraySize, arraySize, tempVarMapSt);
-				fprintf(fpout, "    call void @memset(i32*  %%x%d,i32 0,i32 %d)\n", VarMapSt, arraySize);
+				fprintf(fpout, "    call void @memset(i32*  %%x%d,i32 0,i32 %d)\n", VarMapSt, arraySize*4);
 			}
 
 			if (sym[symst].type == 52)
@@ -1147,7 +1147,7 @@ int VarDef()
 				int tempVarMapSt = VarMapSt;
 				fprintf(fpout, "    %%x%d = alloca [%d x i32]\n", VarMapSt++, arraySize);
 				fprintf(fpout, "    %%x%d = getelementptr [%d x i32], [%d x i32]* %%x%d, i32 0, i32 0\n", VarMapSt, arraySize, arraySize, tempVarMapSt);
-				fprintf(fpout, "    call void @memset(i32*  %%x%d,i32 0,i32 %d)\n", VarMapSt, arraySize);
+				fprintf(fpout, "    call void @memset(i32*  %%x%d,i32 0,i32 %d)\n", VarMapSt, arraySize*4);
 			}
 
 			if (sym[symst].type == 52)

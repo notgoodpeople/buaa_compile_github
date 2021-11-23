@@ -2110,9 +2110,13 @@ int LVal()
 		base++;
 		bracketCheck++;
 		temp = 1;
+
+		int savedVarMapSt = VarMapSt;
 		map<string, struct VarItem>::iterator savedVarIt = varIt;
 		int result = Exp();
 		varIt = savedVarIt;
+
+
 		tempExpStack = &ExpStack.top();
 		//fprintf(fpout,"Lval Exp here\n");
 		for (int i = tempDimension - 1; i >= base; i--)
@@ -2124,12 +2128,12 @@ int LVal()
 		if (tempExpStack->type == 1)
 		{
 			fprintf(fpout, "    %%x%d = mul i32 %d, %d\n", ++VarMapSt, tempExpStack->value,temp);
-			fprintf(fpout, "    %%x%d = add i32 %%x%d, %%x%d\n", ++VarMapSt, VarMapSt-1,VarMapSt);
+			fprintf(fpout, "    %%x%d = add i32 %%x%d, %%x%d\n", ++VarMapSt, savedVarMapSt,VarMapSt);
 		}
 		else if (tempExpStack->type == 3)
 		{
 			fprintf(fpout, "    %%x%d = mul i32 %%x%d, %d\n", ++VarMapSt, tempExpStack->value,temp);
-			fprintf(fpout, "    %%x%d = add i32 %%x%d, %%x%d\n", ++VarMapSt, VarMapSt-1,VarMapSt);
+			fprintf(fpout, "    %%x%d = add i32 %%x%d, %%x%d\n", ++VarMapSt, savedVarMapSt,VarMapSt);
 		}
 		else
 		{

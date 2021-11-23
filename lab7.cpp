@@ -244,19 +244,10 @@ int getToken()
 			{
 				token[tst++] = ch;
 				ch = str[++sst];
-				while ((ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || ch == '_' || ch == '\n')
+				while ((ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || ch == '_')
 				{
-					if (ch == '\n')
-					{
-						fgets(str, 2000, fpin);
-						sst = -1;
-						ch = str[++sst];
-					}
-					else
-					{
-						token[tst++] = ch;
-						ch = str[++sst];
-					}
+					token[tst++] = ch;
+					ch = str[++sst];
 				}
 				token[tst] = '\0';
 				tst = 0;
@@ -2188,37 +2179,7 @@ int LVal()
 }
 void Cond()
 {
-	condHasIcmp = false;
 	LOrExp();
-	if (!condHasIcmp)
-	{
-		struct ExpElem num = ExpStack.top();
-		ExpStack.pop();
-		if (num.type != 1 && num.type != 3)
-		{
-			printf("error in Cond");
-			throw "Error";
-		}
-
-		// if (ExpStack.empty())
-		// {
-		// 	ExpStack.push(num);
-		// 	return;
-		// }
-
-		if (num.type == 1)
-		{
-			fprintf(fpout, "    %%x%d = icmp ne i32 %d, 0\n", ++VarMapSt, num.value);
-		}
-		else
-		{
-			fprintf(fpout, "    %%x%d = icmp ne i32 %%x%d, 0\n", ++VarMapSt, num.value);
-		}
-		num.value = VarMapSt;
-		num.type = 3;
-		ExpStack.push(num);
-		tempExpStack = &ExpStack.top();
-	}
 }
 void LOrExp()
 {
@@ -2257,7 +2218,37 @@ void LOrExp()
 }
 void LAndExp()
 {
+	condHasIcmp = false;
 	EqExp();
+	if (!condHasIcmp)
+	{
+		struct ExpElem num = ExpStack.top();
+		ExpStack.pop();
+		if (num.type != 1 && num.type != 3)
+		{
+			printf("error in Cond");
+			throw "Error";
+		}
+
+		// if (ExpStack.empty())
+		// {
+		// 	ExpStack.push(num);
+		// 	return;
+		// }
+
+		if (num.type == 1)
+		{
+			fprintf(fpout, "    %%x%d = icmp ne i32 %d, 0\n", ++VarMapSt, num.value);
+		}
+		else
+		{
+			fprintf(fpout, "    %%x%d = icmp ne i32 %%x%d, 0\n", ++VarMapSt, num.value);
+		}
+		num.value = VarMapSt;
+		num.type = 3;
+		ExpStack.push(num);
+		tempExpStack = &ExpStack.top();
+	}
 	if (sym[symst].type == 67)
 		symNow = sym[symst++];
 	while (symNow.type == 67)
@@ -2272,7 +2263,37 @@ void LAndExp()
 			tempExpStack->value = 6; //是&&
 			ExpStack.push(*tempExpStack);
 		}
+		condHasIcmp = false;
 		EqExp();
+		if (!condHasIcmp)
+		{
+			struct ExpElem num = ExpStack.top();
+			ExpStack.pop();
+			if (num.type != 1 && num.type != 3)
+			{
+				printf("error in Cond");
+				throw "Error";
+			}
+
+			// if (ExpStack.empty())
+			// {
+			// 	ExpStack.push(num);
+			// 	return;
+			// }
+
+			if (num.type == 1)
+			{
+				fprintf(fpout, "    %%x%d = icmp ne i32 %d, 0\n", ++VarMapSt, num.value);
+			}
+			else
+			{
+				fprintf(fpout, "    %%x%d = icmp ne i32 %%x%d, 0\n", ++VarMapSt, num.value);
+			}
+			num.value = VarMapSt;
+			num.type = 3;
+			ExpStack.push(num);
+			tempExpStack = &ExpStack.top();
+		}
 		Operation();
 		// int tem = condCountTrueStack.top();
 		// condCountTrueStack.pop();

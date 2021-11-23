@@ -74,7 +74,7 @@ map<string, struct VarItem> BVarMap;		 //代码块中的局部Map
 list< map<string, struct VarItem> > VarMapList;
 list< map<string, struct VarItem> >::reverse_iterator VarMapListIt; //VarMapList反向迭代器
 int VarMapSt = 0;												  //当前新寄存器的值
-int GVarMapst = 10000;											  //当前全局变量寄存器的值,和局部变量寄存器区分，从10000开始
+int GVarMapst = 1000;											  //当前全局变量寄存器的值,和局部变量寄存器区分，从1000开始
 struct VarItem *arrayDecl;										  //对于数组的初始化，需要保留数组定义时的信息以调用
 // struct CondBlock{       //条件变量对应的代码块信息
 // 	int registerNum; //寄存器的值
@@ -747,7 +747,7 @@ int ConstDef()
 			// if (ret != 0)
 			// 	return ret;
 			tempExpStack = &ExpStack.top();
-			if (tempVarItem->registerNum < 9999)
+			if (tempVarItem->registerNum < 999)
 			{
 				if (tempExpStack->type == 1)
 				{
@@ -764,7 +764,7 @@ int ConstDef()
 					return ret;
 				}
 			}
-			else if (tempVarItem->registerNum > 9999)
+			else if (tempVarItem->registerNum > 999)
 			{
 				if (tempExpStack->type == 1)
 				{
@@ -939,7 +939,7 @@ int ConstInitVal()
 					throw "Error";
 				}
 				tempExpStack = &ExpStack.top();
-				if (arrayDecl->registerNum < 9999)
+				if (arrayDecl->registerNum < 999)
 				{
 					if (tempExpStack->type == 1)
 					{
@@ -1172,7 +1172,7 @@ int VarDef()
 			if (ret != 0)
 				return ret;
 			tempExpStack = &ExpStack.top();
-			if (tempVarItem->registerNum < 9999)
+			if (tempVarItem->registerNum < 999)
 			{
 				if (tempExpStack->type == 1)
 				{
@@ -1189,7 +1189,7 @@ int VarDef()
 					return ret;
 				}
 			}
-			else if (tempVarItem->registerNum > 9999)
+			else if (tempVarItem->registerNum > 999)
 			{
 				if (tempExpStack->type == 1)
 				{
@@ -1362,7 +1362,7 @@ int InitVal()
 				int tempVarSt = VarMapSt;
 				int tempAns = Exp();
 				tempExpStack = &ExpStack.top();
-				if (arrayDecl->registerNum < 9999)
+				if (arrayDecl->registerNum < 999)
 				{
 					if (tempExpStack->type == 1)
 					{
@@ -1627,7 +1627,7 @@ int Stmt()
 		symNow = sym[symst++];
 		int tempAns = Exp();
 		symNow = sym[symst++];
-		if (retRegister <= 9999)
+		if (retRegister <= 999)
 		{
 			if (tempExpStack->type == 1)
 			{
@@ -2161,7 +2161,7 @@ int LVal()
 
 	if (isArray)
 	{
-		if((*varIt).second.registerNum<=9999)
+		if((*varIt).second.registerNum<=999)
 			fprintf(fpout, "    %%x%d = getelementptr [%d x i32], [%d x i32]* %%x%d, i32 0, i32 %%x%d\n", ++VarMapSt, (*varIt).second.arraySize, (*varIt).second.arraySize, (*varIt).second.registerNum, VarMapSt);
 		else fprintf(fpout, "    %%x%d = getelementptr [%d x i32], [%d x i32]* @x%d, i32 0, i32 %%x%d\n", ++VarMapSt, (*varIt).second.arraySize, (*varIt).second.arraySize, (*varIt).second.registerNum, VarMapSt);
 		IsGlobalVal = false;  //防止load的时候使用全局变量的输出

@@ -12,98 +12,98 @@
 using namespace std;
 char str[3024];
 char token[2560];
-int sst = 0;   //±íÊ¾¾ä×Ó¶ÁµÄÎ»ÖÃ sentenceStart
-int tst = 0;   //±íÊ¾´Ê¶ÁµÄÎ»ÖÃ tokenStart
-int symed = 0; //±íÊ¾´æ´¢·ûºÅµÄ´Ê×éµÄ×îºóÎ»ÖÃ
-int symst = 0; //±íÊ¾ ´æ´¢·ûºÅµÄ´Ê×éµÄµ±Ç°¶ÁÈ¡
+int sst = 0;   //ï¿½ï¿½Ê¾ï¿½ï¿½ï¿½Ó¶ï¿½ï¿½ï¿½Î»ï¿½ï¿½ sentenceStart
+int tst = 0;   //ï¿½ï¿½Ê¾ï¿½Ê¶ï¿½ï¿½ï¿½Î»ï¿½ï¿½ tokenStart
+int symed = 0; //ï¿½ï¿½Ê¾ï¿½æ´¢ï¿½ï¿½ï¿½ÅµÄ´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î»ï¿½ï¿½
+int symst = 0; //ï¿½ï¿½Ê¾ ï¿½æ´¢ï¿½ï¿½ï¿½ÅµÄ´ï¿½ï¿½ï¿½Äµï¿½Ç°ï¿½ï¿½È¡
 char key[12][15] = {"int", "main", "return", "const", "if", "else", "while", "break", "continue"};
 char keyOut[12][15] = {"Int", "Main", "Return", "Const", "If", "Else", "While", "Break", "Continue"};
 char funcCall[9][15] = {"getint", "putint", "getch", "putch"};
 char funcCallOut[9][15] = {"Func(getint)", "Func(putint)", "Func(getch)", "Func(putch)"};
 struct symType
-{ //ÕýÔÚ·ÖÎöµÄ´Ê
+{ //ï¿½ï¿½ï¿½Ú·ï¿½ï¿½ï¿½ï¿½Ä´ï¿½
 	string name;
-	/*ÀàÐÍ£º1~10 Îª¹Ø¼ü×Ö£ºint£¬main£¬return£¬const£¬if£¬else, while, break ,continue
-		11~20Îªº¯Êýµ÷ÓÃ£ºgetint putint getch putch
+	/*ï¿½ï¿½ï¿½Í£ï¿½1~10 Îªï¿½Ø¼ï¿½ï¿½Ö£ï¿½intï¿½ï¿½mainï¿½ï¿½returnï¿½ï¿½constï¿½ï¿½ifï¿½ï¿½else, while, break ,continue
+		11~20Îªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã£ï¿½getint putint getch putch
 		21 Number 22 Ident
-		51~ ·ûºÅ 51 == 52 = 53 , 54 ; 55 ( 56 ) 57 { 58 } 59 + 60 *
+		51~ ï¿½ï¿½ï¿½ï¿½ 51 == 52 = 53 , 54 ; 55 ( 56 ) 57 { 58 } 59 + 60 *
 				61 / 62 - 63 % 64 < 65 > 66 || 67 && 68 != 69 <= 70 >=
 				71 ! 72 [ 73 ]
 	*/
-	int value; //Èç¹ûÊÇnumberÀà  »á´¢´æintÐÍµÄÖµ
+	int value; //ï¿½ï¿½ï¿½ï¿½ï¿½numberï¿½ï¿½  ï¿½á´¢ï¿½ï¿½intï¿½Íµï¿½Öµ
 	int type;
 } sym[10050];
 struct symType symNow;
-int ret = 0;		//³ÌÐò³ö´íµÄ·µ»ØÖµ
-int tempRetNum = 0; //EXP()Ê½×ÓÖÐµÄÁÙÊ±·µ»ØÖµ
+int ret = 0;		//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä·ï¿½ï¿½ï¿½Öµ
+int tempRetNum = 0; //EXP()Ê½ï¿½ï¿½ï¿½Ðµï¿½ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½Öµ
 struct ExpElem
 {
-	int type; //1 ExpÖÐµÄÊý×Ö£¬2 ÔËËã·û£¬3 ¼Ä´æÆ÷£¬4 UnaryOp, 5 ±È½Ï·ûºÅ
+	int type; //1 Expï¿½Ðµï¿½ï¿½ï¿½ï¿½Ö£ï¿½2 ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½3 ï¿½Ä´ï¿½ï¿½ï¿½ï¿½ï¿½4 UnaryOp, 5 ï¿½È½Ï·ï¿½ï¿½ï¿½
 	/* 
-	1£ºÊý×ÖµÄÖµ
-	2£º1¼Ó·¨£¬2¼õ·¨£¬3³Ë·¨£¬4³ý·¨£¬5È¡Óà, 6 &&, 7 ||
-	3£º¼Ä´æÆ÷µÄ±êºÅ
-	4£º1ÕýºÅ 2¸ººÅ 3 Not
+	1ï¿½ï¿½ï¿½ï¿½ï¿½Öµï¿½Öµ
+	2ï¿½ï¿½1ï¿½Ó·ï¿½ï¿½ï¿½2ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½3ï¿½Ë·ï¿½ï¿½ï¿½4ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½5È¡ï¿½ï¿½, 6 &&, 7 ||
+	3ï¿½ï¿½ï¿½Ä´ï¿½ï¿½ï¿½ï¿½Ä±ï¿½ï¿½
+	4ï¿½ï¿½1ï¿½ï¿½ï¿½ï¿½ 2ï¿½ï¿½ï¿½ï¿½ 3 Not
 	5: 1 == 2 != 3 < 4 > 5<= 6>=
 	*/
 	int value;
-	int value_1; //i1Ê±µÄÖµ£¬½öÔÚtype=3Ê±Ê¹ÓÃ
+	int value_1; //i1Ê±ï¿½ï¿½Öµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½type=3Ê±Ê¹ï¿½ï¿½
 };
 struct ExpElem *tempExpStack;
-stack<struct ExpElem> ExpStack; //ÓÃÓÚÉú³É¼ÆËãÖµLLVM IRµÄÕ»
+stack<struct ExpElem> ExpStack; //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½É¼ï¿½ï¿½ï¿½ÖµLLVM IRï¿½ï¿½Õ»
 bool VarInInit = false;
 bool LvalIsConst = false;
 struct VarItem
 {
-	bool isConst;	 //ÊÇ·ñÊÇ³£Á¿
-	int registerNum; //¼Ä´æÆ÷µÄºÅÂë
-	int globalNum;	 //½öÔÚÊÇÈ«¾Ö±äÁ¿ÇÒÊÇ³£Á¿Ê±Ê¹ÓÃ
-	int dimension;	 //Èç¹ûÊÇÊý×é£¬ÊÇ¼¸Î¬Êý×é(ÔÚ±¾±àÒëÆ÷ÖÐ¶¼×÷ÎªÒ»Î¬Êý×éÀ´Ê¹ÓÃ)
-	int d[10];		 // Èça[3][4]µÄÊý×é£¬Ôòd[0]=3 d[1]=4
-	int arraySize;	 //¶ÔÓÚÊý×é Êý×éµÄ´óÐ¡
+	bool isConst;	 //ï¿½Ç·ï¿½ï¿½Ç³ï¿½ï¿½ï¿½
+	int registerNum; //ï¿½Ä´ï¿½ï¿½ï¿½ï¿½Äºï¿½ï¿½ï¿½
+	int globalNum;	 //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È«ï¿½Ö±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç³ï¿½ï¿½ï¿½Ê±Ê¹ï¿½ï¿½
+	int dimension;	 //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½é£¬ï¿½Ç¼ï¿½Î¬ï¿½ï¿½ï¿½ï¿½(ï¿½Ú±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¶ï¿½ï¿½ï¿½ÎªÒ»Î¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê¹ï¿½ï¿½)
+	int d[10];		 // ï¿½ï¿½a[3][4]ï¿½ï¿½ï¿½ï¿½ï¿½é£¬ï¿½ï¿½d[0]=3 d[1]=4
+	int arraySize;	 //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Ä´ï¿½Ð¡
 };
-int index = 0;								 //¶àÎ¬Êý×é³õÊ¼»¯Ê±µÄÆ«ÒÆÁ¿
-int baseNum = 0;							 //¶àÎ¬Êý×éÆ«ÒÆÁ¿¼ÆËãÖÐÊ¹ÓÃµÄ£¬´ú±í×ó»¨À¨ºÅ¸öÊýµÄÖµ
-bool arrayDef = false;						 //ÔÚinitÊ±£¬ÅÐ¶Ïµ÷ÓÃinitº¯ÊýµÄÊÇ²»ÊÇarray
-int tempArr[1000];                           //ÔÚinitÈ«¾ÖÊý×éÊ±Ê¹ÓÃµÄÁÙÊ±Êý×é¡£
-map<string, struct VarItem>::iterator varIt; //Varmap±äÁ¿µü´úÆ÷
-map<string, struct VarItem> GVarMap;		 //È«¾Ö±äÁ¿µÄMap
-bool GlobalDef;								 //µ±ÖµÎªtrueÊ±£¬´ú±íÏÖÔÚÕýÔÚ¶¨ÒåÈ«¾Ö±äÁ¿
-bool IsGlobalVal;							 //µ±ÖµÎªtrueÊ±£¬ËµÃ÷µ±Ç°loadµÄ±äÁ¿ÊÇÈ«¾Ö±äÁ¿
-map<string, struct VarItem> BVarMap;		 //´úÂë¿éÖÐµÄ¾Ö²¿Map
+int Offset = 0;								 //ï¿½ï¿½Î¬ï¿½ï¿½ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½Ê±ï¿½ï¿½Æ«ï¿½ï¿½ï¿½ï¿½
+int baseNum = 0;							 //ï¿½ï¿½Î¬ï¿½ï¿½ï¿½ï¿½Æ«ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê¹ï¿½ÃµÄ£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Å¸ï¿½ï¿½ï¿½ï¿½ï¿½Öµ
+bool arrayDef = false;						 //ï¿½ï¿½initÊ±ï¿½ï¿½ï¿½Ð¶Ïµï¿½ï¿½ï¿½initï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç²ï¿½ï¿½ï¿½array
+int tempArr[1000];                           //ï¿½ï¿½initÈ«ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê±Ê¹ï¿½Ãµï¿½ï¿½ï¿½Ê±ï¿½ï¿½ï¿½é¡£
+map<string, struct VarItem>::iterator varIt; //Varmapï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+map<string, struct VarItem> GVarMap;		 //È«ï¿½Ö±ï¿½ï¿½ï¿½ï¿½ï¿½Map
+bool GlobalDef;								 //ï¿½ï¿½ÖµÎªtrueÊ±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú¶ï¿½ï¿½ï¿½È«ï¿½Ö±ï¿½ï¿½ï¿½
+bool IsGlobalVal;							 //ï¿½ï¿½ÖµÎªtrueÊ±ï¿½ï¿½Ëµï¿½ï¿½ï¿½ï¿½Ç°loadï¿½Ä±ï¿½ï¿½ï¿½ï¿½ï¿½È«ï¿½Ö±ï¿½ï¿½ï¿½
+map<string, struct VarItem> BVarMap;		 //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÐµÄ¾Ö²ï¿½Map
 list< map<string, struct VarItem> > VarMapList;
-list< map<string, struct VarItem> >::reverse_iterator VarMapListIt; //VarMapList·´Ïòµü´úÆ÷
-int VarMapSt = 0;												  //µ±Ç°ÐÂ¼Ä´æÆ÷µÄÖµ
-int GVarMapst = 10000;											  //µ±Ç°È«¾Ö±äÁ¿¼Ä´æÆ÷µÄÖµ,ºÍ¾Ö²¿±äÁ¿¼Ä´æÆ÷Çø·Ö£¬´Ó10000¿ªÊ¼
-struct VarItem *arrayDecl;										  //¶ÔÓÚÊý×éµÄ³õÊ¼»¯£¬ÐèÒª±£ÁôÊý×é¶¨ÒåÊ±µÄÐÅÏ¢ÒÔµ÷ÓÃ
-// struct CondBlock{       //Ìõ¼þ±äÁ¿¶ÔÓ¦µÄ´úÂë¿éÐÅÏ¢
-// 	int registerNum; //¼Ä´æÆ÷µÄÖµ
-// 	int type;  //ÕâÊÇ¸öÊ²Ã´ÀàÐÍÄØ 1 IF 2 Else 3 LOrd 4 LAnd 5 main
-// 	int num;  //ÔÚÕâ¸öÀàÐÍÊÇµÚ¼¸¸ö
-// 	bool wantB;  //ÏëÒªÉÏÒ»¸öÌõ¼þ±äÁ¿ÊÇÊ²Ã´²¼¶ûÖµ
+list< map<string, struct VarItem> >::reverse_iterator VarMapListIt; //VarMapListï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+int VarMapSt = 0;												  //ï¿½ï¿½Ç°ï¿½Â¼Ä´ï¿½ï¿½ï¿½ï¿½ï¿½Öµ
+int GVarMapst = 10000;											  //ï¿½ï¿½Ç°È«ï¿½Ö±ï¿½ï¿½ï¿½ï¿½Ä´ï¿½ï¿½ï¿½ï¿½ï¿½Öµ,ï¿½Í¾Ö²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö£ï¿½ï¿½ï¿½10000ï¿½ï¿½Ê¼
+struct VarItem *arrayDecl;										  //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä³ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½é¶¨ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½Ï¢ï¿½Ôµï¿½ï¿½ï¿½
+// struct CondBlock{       //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó¦ï¿½Ä´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢
+// 	int registerNum; //ï¿½Ä´ï¿½ï¿½ï¿½ï¿½ï¿½Öµ
+// 	int type;  //ï¿½ï¿½ï¿½Ç¸ï¿½Ê²Ã´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ 1 IF 2 Else 3 LOrd 4 LAnd 5 main
+// 	int num;  //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÇµÚ¼ï¿½ï¿½ï¿½
+// 	bool wantB;  //ï¿½ï¿½Òªï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê²Ã´ï¿½ï¿½ï¿½ï¿½Öµ
 // };
-// map<int, struct CondBlock> CondBlockMap;  //map[type]µÄnumµ½¶àÉÙÁË¡£
-int condCount = 1; //¸ÃÊÇµÚ¼¸¸öcond¿éÁË
+// map<int, struct CondBlock> CondBlockMap;  //map[type]ï¿½ï¿½numï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ë¡ï¿½
+int condCount = 1; //ï¿½ï¿½ï¿½ÇµÚ¼ï¿½ï¿½ï¿½condï¿½ï¿½ï¿½ï¿½
 bool condHasIcmp = false;
-//ÒÔÏÂµÄÕ»ÊÇÓÃÀ´fprintfÌø×ªlabelµÄÕ»
+//ï¿½ï¿½ï¿½Âµï¿½Õ»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½fprintfï¿½ï¿½×ªlabelï¿½ï¿½Õ»
 stack<int> condCountFalseStack;
 stack<int> condCountTrueStack;
 stack<int> whileCountFalseStack;
 stack<int> whileCountTrueStack;
 stack<int> continueCountTrueStack;
-map<bool, int> condCountMap; //Ã»ÓÐÓÃµ½£¬ÓÃboolÖµÀ´ÅÐ¶ÏÌõ¼þ±äÁ¿¿éµÄ±àºÅ
+map<bool, int> condCountMap; //Ã»ï¿½ï¿½ï¿½Ãµï¿½ï¿½ï¿½ï¿½ï¿½boolÖµï¿½ï¿½ï¿½Ð¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä±ï¿½ï¿½
 
-int mainCount = 1;		//×¼±¸´ÓÌõ¼þÓï¾ä»òÕßÑ­»·ÖÐ£¬·µ»ØÉÏÒ»²ã£¬ÉÏÒ»²ãµÄÐòºÅ m_{{maincount}}
-int whileCondCount = 1; // Ñ­»·ÖÐµÄCondµÄ±àºÅ
+int mainCount = 1;		//×¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ñ­ï¿½ï¿½ï¿½Ð£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ã£¬ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ m_{{maincount}}
+int whileCondCount = 1; // Ñ­ï¿½ï¿½ï¿½Ðµï¿½Condï¿½Ä±ï¿½ï¿½
 struct FuncItem
 {
-	int RetType;		//º¯Êý·µ»ØÀàÐÍ 1Îªint 0Îªvoid
-	vector<int> params; //º¯Êý²ÎÊýÁÐ±í
-	string funcName;	//LLVM IRÖÐµÄº¯ÊýÃû
-	int paramsNum;		//º¯Êý²ÎÊý¸öÊý
+	int RetType;		//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ 1Îªint 0Îªvoid
+	vector<int> params; //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð±ï¿½
+	string funcName;	//LLVM IRï¿½ÐµÄºï¿½ï¿½ï¿½ï¿½ï¿½
+	int paramsNum;		//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 };
 map<string, struct FuncItem> FuncMap;
-map<string, struct FuncItem>::iterator funcIt; //Funcmap±äÁ¿µü´úÆ÷
+map<string, struct FuncItem>::iterator funcIt; //Funcmapï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 int LVal();
 int getToken();
 int CompUnit();
@@ -171,9 +171,9 @@ int main(int argc, char *argv[])
 	return 0;
 }
 
-//½øÖÆ×ª»»
+//ï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½
 void ChangeTen(int n, char str[])
-{ //½«n½øÖÆÊý×ª»»³É10½øÖÆÊý
+{ //ï¿½ï¿½nï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½ï¿½ï¿½10ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	int len = strlen(str), i, sum = 0, t = 1;
 	for (i = len - 1; i >= 0; i--)
 	{
@@ -195,13 +195,13 @@ void ChangeTen(int n, char str[])
 	sym[symed].name = "Number";
 	sym[symed++].type = 21;
 }
-//ÔÚ±í´ïÊ½¼ÆËã£¬Exp()Ààº¯ÊýÊ± Ê¹ÓÃ¸Ãº¯Êý±¨´í
+//ï¿½Ú±ï¿½ï¿½ï¿½Ê½ï¿½ï¿½ï¿½ã£¬Exp()ï¿½àº¯ï¿½ï¿½Ê± Ê¹ï¿½Ã¸Ãºï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 void error()
 {
 	ret = 120;
 	printf("\nExp() error");
 }
-//´Ê·¨·ÖÎö
+//ï¿½Ê·ï¿½ï¿½ï¿½ï¿½ï¿½
 int getToken()
 {
 	int note = 0;
@@ -239,7 +239,7 @@ int getToken()
 				note = 1;
 				sst++;
 			}
-			//Ident»òÕß¹Ø¼ü×Ö
+			//Identï¿½ï¿½ï¿½ß¹Ø¼ï¿½ï¿½ï¿½
 			else if ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || ch == '_')
 			{
 				token[tst++] = ch;
@@ -260,7 +260,7 @@ int getToken()
 				}
 				token[tst] = '\0';
 				tst = 0;
-				//ÅÐ¶ÏÊÇ·ñÊÇ¹Ø¼ü×Ö
+				//ï¿½Ð¶ï¿½ï¿½Ç·ï¿½ï¿½Ç¹Ø¼ï¿½ï¿½ï¿½
 				for (int i = 0; i <= 8; i++)
 				{
 					if (strcmp(token, key[i]) == 0)
@@ -270,7 +270,7 @@ int getToken()
 						iskey = 1;
 					}
 				}
-				//ÅÐ¶ÏÊÇ·ñÊÇµ÷ÓÃº¯Êý
+				//ï¿½Ð¶ï¿½ï¿½Ç·ï¿½ï¿½Çµï¿½ï¿½Ãºï¿½ï¿½ï¿½
 				for (int i = 0; i <= 3; i++)
 				{
 					if (strcmp(token, funcCall[i]) == 0)
@@ -286,7 +286,7 @@ int getToken()
 					sym[symed++].type = 22;
 				}
 			}
-			//NumberÀà
+			//Numberï¿½ï¿½
 			else if (ch >= '0' && ch <= '9')
 			{
 				if (ch != '0')
@@ -304,7 +304,7 @@ int getToken()
 				}
 				else
 				{
-					//16½øÖÆ
+					//16ï¿½ï¿½ï¿½ï¿½
 					if (str[sst + 1] == 'x' || str[sst + 1] == 'X')
 					{
 						sst++;
@@ -322,13 +322,13 @@ int getToken()
 							tst = 0;
 							ChangeTen(16, token);
 						}
-						//16½øÖÆNumber³ö´í
+						//16ï¿½ï¿½ï¿½ï¿½Numberï¿½ï¿½ï¿½ï¿½
 						else
 						{
 							return 16;
 						}
 					}
-					//8½øÖÆ
+					//8ï¿½ï¿½ï¿½ï¿½
 					else
 					{
 						if (str[sst + 1] >= '0' && str[sst + 1] <= '8')
@@ -536,7 +536,7 @@ int getToken()
 	}
 	return 0;
 }
-//³õÊ¼»¯º¯Êýµ÷ÓÃ
+//ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 void initFunc()
 {
 	//int getint();
@@ -587,7 +587,7 @@ void initFunc()
 	//void memset(pointer,0,size *sizeof(int))
 	fprintf(fpout, "declare void @memset(i32*, i32, i32)\n");
 }
-//³õÊ¼»¯Ìõ¼þ±äÁ¿µÄÃüÃû
+//ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 // void initCond(){
 // 	CondBlockMap[1].num = 1;
 // 	CondBlockMap[2].num = 1;
@@ -595,7 +595,7 @@ void initFunc()
 // 	CondBlockMap[4].num = 1;
 // 	CondBlockMap[5].num = 1;
 // }
-//Óï·¨·ÖÎö
+//ï¿½ï·¨ï¿½ï¿½ï¿½ï¿½
 int CompUnit()
 {
 	initFunc();
@@ -637,7 +637,7 @@ int Decl()
 }
 int ConstDecl()
 {
-	//constÔÚDecl()ÖÐÒÑ¾­¼ì²â
+	//constï¿½ï¿½Decl()ï¿½ï¿½ï¿½Ñ¾ï¿½ï¿½ï¿½ï¿½
 
 	ret = Btype();
 	if (ret != 0)
@@ -698,7 +698,7 @@ int ConstDef()
 			symNow = sym[symst++];
 			if (symNow.type != 73)
 			{
-				printf("error in ConstDef Êý×é ]");
+				printf("error in ConstDef ï¿½ï¿½ï¿½ï¿½ ]");
 				throw "Error";
 			}
 			if (sym[symst].type == 72)
@@ -706,7 +706,7 @@ int ConstDef()
 				symNow = sym[symst++];
 			}
 		}
-		if (tempDimesion != 0) //ÊÇÊý×é
+		if (tempDimesion != 0) //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		{
 			tempVarItem->dimension = tempDimesion;
 			int arraySize = 1;
@@ -716,7 +716,7 @@ int ConstDef()
 			}
 			tempVarItem->arraySize = arraySize;
 			BVarMap[tempName] = *tempVarItem;
-			arrayDecl = tempVarItem; //°Ñµ±Ç°µÄÊý×é±äÁ¿ÐÅÏ¢Áôµ½InitValÓÃ
+			arrayDecl = tempVarItem; //ï¿½Ñµï¿½Ç°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢ï¿½ï¿½ï¿½ï¿½InitValï¿½ï¿½
 			if (tempDimesion == 0)
 				fprintf(fpout, "    %%x%d = alloca i32\n", VarMapSt);
 			else
@@ -734,7 +734,7 @@ int ConstDef()
 				return 0;
 			}
 			baseNum = 0;
-			index = 0;
+			Offset = 0;
 			symNow = sym[symst++];
 			arrayDef = true;
 			ret = ConstInitVal();
@@ -817,7 +817,7 @@ int ConstDef()
 			symNow = sym[symst++];
 			if (symNow.type != 73)
 			{
-				printf("error in ConstDef Êý×é ]");
+				printf("error in ConstDef ï¿½ï¿½ï¿½ï¿½ ]");
 				throw "Error";
 			}
 			if (sym[symst].type == 72)
@@ -825,7 +825,7 @@ int ConstDef()
 				symNow = sym[symst++];
 			}
 		}
-		if (tempDimesion != 0) //ÊÇÊý×é
+		if (tempDimesion != 0) //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		{
 			tempVarItem->dimension = tempDimesion;
 			int arraySize = 1;
@@ -835,7 +835,7 @@ int ConstDef()
 			}
 			tempVarItem->arraySize = arraySize;
 			GVarMap[tempName] = *tempVarItem;
-			arrayDecl = tempVarItem; //°Ñµ±Ç°µÄÊý×é±äÁ¿ÐÅÏ¢Áôµ½InitValÓÃ
+			arrayDecl = tempVarItem; //ï¿½Ñµï¿½Ç°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢ï¿½ï¿½ï¿½ï¿½InitValï¿½ï¿½
 			if (sym[symst].type == 54 || sym[symst].type == 53)
 			{
 				fprintf(fpout, "@x%d = dso_local global [%d x i32] zeroinitializer\n", GVarMapst, arraySize);
@@ -848,12 +848,12 @@ int ConstDef()
 				throw "Error";
 			}
 			baseNum = 0;
-			index = 0;
+			Offset = 0;
 			symNow = sym[symst++];
 			arrayDef = true;
 			memset(tempArr, 0, 1000*sizeof(int));
 			if(arraySize>=950){
-				printf("tempArrÊý×é¿ªÐ¡ÁË");
+				printf("tempArrï¿½ï¿½ï¿½é¿ªÐ¡ï¿½ï¿½");
 			}
 			ret = ConstInitVal();
 			fprintf(fpout, "@x%d = dso_local global [%d x i32] [",GVarMapst, arraySize);
@@ -863,7 +863,7 @@ int ConstDef()
 			fprintf(fpout,"i32 %d]\n",tempArr[arraySize-1]);
 		}
 		else{
-			if(sym[symst].type == 54 || sym[symst].type == 53){     //Ã»ÓÐ³õÊ¼»¯
+			if(sym[symst].type == 54 || sym[symst].type == 53){     //Ã»ï¿½Ð³ï¿½Ê¼ï¿½ï¿½
 			GVarMap[tempName] = *tempVarItem;
 			fprintf(fpout,"@x%d = dso_local global i32 %d\n",GVarMapst,tempVarItem->globalNum);
 			return 0;
@@ -895,7 +895,7 @@ int ConstInitVal()
 		if (arrayDef)
 		{
 			if (symNow.type == 57)
-			{ //»¨À¨ºÅ  Êý×é³õÊ¼»¯
+			{ //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½  ï¿½ï¿½ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½
 				symNow = sym[symst++];
 				baseNum++;
 				if (symNow.type == 58)
@@ -909,16 +909,16 @@ int ConstInitVal()
 					{
 						symNow = sym[symst++];
 					}
-					int savedIndex = index;
+					int savedIndex = Offset;
 					while (symNow.type == 53)
-					{ //Í¬Ò»¸ö»¨À¨ºÅÄÚ£¬¶ººÅÓÒÒÆÒ»Î»
+					{ //Í¬Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»Î»
 						symNow = sym[symst++];
 						int temp = 1;
 						for (int i = arrayDecl->dimension - 1; i >= baseNum; i--)
 						{
 							temp *= arrayDecl->d[i];
 						}
-						index += temp;
+						Offset += temp;
 						InitVal();
 						if (sym[symst].type == 53)
 						{
@@ -928,20 +928,20 @@ int ConstInitVal()
 					symNow = sym[symst++];
 					if (symNow.type != 58)
 					{
-						printf("error in InitVal Êý×é }");
+						printf("error in InitVal ï¿½ï¿½ï¿½ï¿½ }");
 						throw "Error";
 					}
-					index = savedIndex;
+					Offset = savedIndex;
 					baseNum--;
 				}
 			}
 			else
 			{ //ConstInitVal -> ConstExp
-				fprintf(fpout, "    %%x%d = getelementptr [%d x i32], [%d x i32]* %%x%d, i32 0, i32 %d\n", ++VarMapSt, arrayDecl->arraySize, arrayDecl->arraySize, arrayDecl->registerNum, index);
+				fprintf(fpout, "    %%x%d = getelementptr [%d x i32], [%d x i32]* %%x%d, i32 0, i32 %d\n", ++VarMapSt, arrayDecl->arraySize, arrayDecl->arraySize, arrayDecl->registerNum, Offset);
 				int tempVarSt = VarMapSt;
 				VarInInit = false;
 				ConstExp();
-				if (VarInInit) //³£Á¿³õÊ¼»¯²»ÄÜÓÃ±äÁ¿
+				if (VarInInit) //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã±ï¿½ï¿½ï¿½
 				{
 					throw "Error";
 				}
@@ -958,7 +958,7 @@ int ConstInitVal()
 					}
 					else
 					{
-						printf("error in InitVal Êý×é");
+						printf("error in InitVal ï¿½ï¿½ï¿½ï¿½");
 						throw "Error";
 						return ret;
 					}
@@ -971,7 +971,7 @@ int ConstInitVal()
 		{ //ConstInitVal -> ConstExp
 			VarInInit = false;
 			ConstExp();
-			if (VarInInit) //³£Á¿³õÊ¼»¯²»ÄÜÓÃ±äÁ¿
+			if (VarInInit) //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã±ï¿½ï¿½ï¿½
 			{
 				throw "Error";
 			}
@@ -996,16 +996,16 @@ int ConstInitVal()
 					{
 						symNow = sym[symst++];
 					}
-					int savedIndex = index;
+					int savedIndex = Offset;
 					while (symNow.type == 53)
-					{ //Í¬Ò»¸ö»¨À¨ºÅÄÚ£¬¶ººÅÓÒÒÆÒ»Î»
+					{ //Í¬Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»Î»
 						symNow = sym[symst++];
 						int temp = 1;
 						for (int i = arrayDecl->dimension - 1; i >= baseNum; i--)
 						{
 							temp *= arrayDecl->d[i];
 						}
-						index += temp;
+						Offset += temp;
 						InitVal();
 						if (sym[symst].type == 53)
 						{
@@ -1015,10 +1015,10 @@ int ConstInitVal()
 					symNow = sym[symst++];
 					if (symNow.type != 58)
 					{
-						printf("error in InitVal GlobalÊý×é }");
+						printf("error in InitVal Globalï¿½ï¿½ï¿½ï¿½ }");
 						throw "Error";
 					}
-					index = savedIndex;
+					Offset = savedIndex;
 					baseNum--;
 				}
 			}
@@ -1027,11 +1027,11 @@ int ConstInitVal()
 				int tempVarSt = VarMapSt;
 				int tempAns = GlobalAddExp();
 				if (VarInInit)
-				{ //È«¾Ö±äÁ¿³õÊ¼»¯²»ÄÜÓÃ±äÁ¿
-					printf("È«¾Ö±äÁ¿³õÊ¼»¯²»ÄÜÓÃ±äÁ¿");
+				{ //È«ï¿½Ö±ï¿½ï¿½ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã±ï¿½ï¿½ï¿½
+					printf("È«ï¿½Ö±ï¿½ï¿½ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã±ï¿½ï¿½ï¿½");
 					throw "Error";
 				}
-				tempArr[index] = tempAns;
+				tempArr[Offset] = tempAns;
 				return 0;
 			}
 		}
@@ -1040,7 +1040,7 @@ int ConstInitVal()
 			VarInInit = false;
 			ConstExp();
 			if (VarInInit)
-			{ //È«¾Ö±äÁ¿³õÊ¼»¯²»ÄÜÓÃ±äÁ¿
+			{ //È«ï¿½Ö±ï¿½ï¿½ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã±ï¿½ï¿½ï¿½
 				throw "Error";
 			}
 		}
@@ -1117,7 +1117,7 @@ int VarDef()
 			symNow = sym[symst++];
 			if (symNow.type != 73)
 			{
-				printf("error in ConstDef Êý×é ]");
+				printf("error in ConstDef ï¿½ï¿½ï¿½ï¿½ ]");
 				throw "Error";
 			}
 			if (sym[symst].type == 72)
@@ -1126,7 +1126,7 @@ int VarDef()
 			}
 		}
 
-		if (tempDimesion != 0) //ÊÇÊý×é
+		if (tempDimesion != 0) //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		{
 			tempVarItem->dimension = tempDimesion;
 			int arraySize = 1;
@@ -1136,7 +1136,7 @@ int VarDef()
 			}
 			tempVarItem->arraySize = arraySize;
 			BVarMap[tempName] = *tempVarItem;
-			arrayDecl = tempVarItem; //°Ñµ±Ç°µÄÊý×é±äÁ¿ÐÅÏ¢Áôµ½InitValÓÃ
+			arrayDecl = tempVarItem; //ï¿½Ñµï¿½Ç°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢ï¿½ï¿½ï¿½ï¿½InitValï¿½ï¿½
 			if (tempDimesion == 0)
 				fprintf(fpout, "    %%x%d = alloca i32\n", VarMapSt);
 			else
@@ -1154,7 +1154,7 @@ int VarDef()
 				return 0;
 			}
 			baseNum = 0;
-			index = 0;
+			Offset = 0;
 			symNow = sym[symst++];
 			arrayDef = true;
 			ret = InitVal();
@@ -1162,7 +1162,7 @@ int VarDef()
 			// 	return ret;
 		}
 		else
-		{ //²»ÊÇÊý×é
+		{ //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 			BVarMap[symNow.name] = *tempVarItem;
 
 			fprintf(fpout, "    %%x%d = alloca i32\n", VarMapSt);
@@ -1240,7 +1240,7 @@ int VarDef()
 			symNow = sym[symst++];
 			if (symNow.type != 73)
 			{
-				printf("error in ConstDef Êý×é ]");
+				printf("error in ConstDef ï¿½ï¿½ï¿½ï¿½ ]");
 				throw "Error";
 			}
 			if (sym[symst].type == 72)
@@ -1248,7 +1248,7 @@ int VarDef()
 				symNow = sym[symst++];
 			}
 		}
-		if (tempDimesion != 0) //ÊÇÊý×é
+		if (tempDimesion != 0) //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		{
 			tempVarItem->dimension = tempDimesion;
 			int arraySize = 1;
@@ -1258,7 +1258,7 @@ int VarDef()
 			}
 			tempVarItem->arraySize = arraySize;
 			GVarMap[tempName] = *tempVarItem;
-			arrayDecl = tempVarItem; //°Ñµ±Ç°µÄÊý×é±äÁ¿ÐÅÏ¢Áôµ½InitValÓÃ
+			arrayDecl = tempVarItem; //ï¿½Ñµï¿½Ç°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢ï¿½ï¿½ï¿½ï¿½InitValï¿½ï¿½
 			if (sym[symst].type == 54 || sym[symst].type == 53)
 			{
 				fprintf(fpout, "@x%d = dso_local global [%d x i32] zeroinitializer\n", GVarMapst, arraySize);
@@ -1271,12 +1271,12 @@ int VarDef()
 				throw "Error";
 			}
 			baseNum = 0;
-			index = 0;
+			Offset = 0;
 			symNow = sym[symst++];
 			arrayDef = true;
 			memset(tempArr, 0, 1000*sizeof(int));
 			if(arraySize>=950){
-				printf("tempArrÊý×é¿ªÐ¡ÁË");
+				printf("tempArrï¿½ï¿½ï¿½é¿ªÐ¡ï¿½ï¿½");
 			}
 			ret = InitVal();
 			fprintf(fpout, "@x%d = dso_local global [%d x i32] [",GVarMapst, arraySize);
@@ -1286,9 +1286,9 @@ int VarDef()
 			fprintf(fpout,"i32 %d]\n",tempArr[arraySize-1]);
 		}
 		else
-		{ //²»ÊÇÊý×é
+		{ //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 			if (sym[symst].type == 54 || sym[symst].type == 53)
-			{ //Ã»ÓÐ³õÊ¼»¯
+			{ //Ã»ï¿½Ð³ï¿½Ê¼ï¿½ï¿½
 				GVarMap[tempName] = *tempVarItem;
 				fprintf(fpout, "@x%d = dso_local global i32 %d\n", GVarMapst, tempVarItem->globalNum);
 				return 0;
@@ -1321,7 +1321,7 @@ int InitVal()
 		if (arrayDef)
 		{
 			if (symNow.type == 57)
-			{ //»¨À¨ºÅ  Êý×é³õÊ¼»¯
+			{ //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½  ï¿½ï¿½ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½
 				symNow = sym[symst++];
 				baseNum++;
 				if (symNow.type == 58)
@@ -1335,16 +1335,16 @@ int InitVal()
 					{
 						symNow = sym[symst++];
 					}
-					int savedIndex = index;
+					int savedIndex = Offset;
 					while (symNow.type == 53)
-					{ //Í¬Ò»¸ö»¨À¨ºÅÄÚ£¬¶ººÅÓÒÒÆÒ»Î»
+					{ //Í¬Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»Î»
 						symNow = sym[symst++];
 						int temp = 1;
 						for (int i = arrayDecl->dimension - 1; i >= baseNum; i--)
 						{
 							temp *= arrayDecl->d[i];
 						}
-						index += temp;
+						Offset += temp;
 						InitVal();
 						if (sym[symst].type == 53)
 						{
@@ -1354,16 +1354,16 @@ int InitVal()
 					symNow = sym[symst++];
 					if (symNow.type != 58)
 					{
-						printf("error in InitVal Êý×é }");
+						printf("error in InitVal ï¿½ï¿½ï¿½ï¿½ }");
 						throw "Error";
 					}
-					index = savedIndex;
+					Offset = savedIndex;
 					baseNum--;
 				}
 			}
 			else
 			{ //ConstInitVal -> ConstExp
-				fprintf(fpout, "    %%x%d = getelementptr [%d x i32], [%d x i32]* %%x%d, i32 0, i32 %d\n", ++VarMapSt, arrayDecl->arraySize, arrayDecl->arraySize, arrayDecl->registerNum, index);
+				fprintf(fpout, "    %%x%d = getelementptr [%d x i32], [%d x i32]* %%x%d, i32 0, i32 %d\n", ++VarMapSt, arrayDecl->arraySize, arrayDecl->arraySize, arrayDecl->registerNum, Offset);
 				int tempVarSt = VarMapSt;
 				int tempAns = Exp();
 				tempExpStack = &ExpStack.top();
@@ -1379,7 +1379,7 @@ int InitVal()
 					}
 					else
 					{
-						printf("error in InitVal Êý×é");
+						printf("error in InitVal ï¿½ï¿½ï¿½ï¿½");
 						throw "Error";
 						return ret;
 					}
@@ -1389,7 +1389,7 @@ int InitVal()
 			}
 		}
 		else
-		{ //²»ÊÇÊý×é
+		{ //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 			int tempAns = Exp();
 			return 0;
 		}
@@ -1413,16 +1413,16 @@ int InitVal()
 					{
 						symNow = sym[symst++];
 					}
-					int savedIndex = index;
+					int savedIndex = Offset;
 					while (symNow.type == 53)
-					{ //Í¬Ò»¸ö»¨À¨ºÅÄÚ£¬¶ººÅÓÒÒÆÒ»Î»
+					{ //Í¬Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»Î»
 						symNow = sym[symst++];
 						int temp = 1;
 						for (int i = arrayDecl->dimension - 1; i >= baseNum; i--)
 						{
 							temp *= arrayDecl->d[i];
 						}
-						index += temp;
+						Offset += temp;
 						InitVal();
 						if (sym[symst].type == 53)
 						{
@@ -1432,10 +1432,10 @@ int InitVal()
 					symNow = sym[symst++];
 					if (symNow.type != 58)
 					{
-						printf("error in InitVal GlobalÊý×é }");
+						printf("error in InitVal Globalï¿½ï¿½ï¿½ï¿½ }");
 						throw "Error";
 					}
-					index = savedIndex;
+					Offset = savedIndex;
 					baseNum--;
 				}
 			}
@@ -1444,11 +1444,11 @@ int InitVal()
 				int tempVarSt = VarMapSt;
 				int tempAns = GlobalAddExp();
 				if (VarInInit)
-				{ //È«¾Ö±äÁ¿³õÊ¼»¯²»ÄÜÓÃ±äÁ¿
-					printf("È«¾Ö±äÁ¿³õÊ¼»¯²»ÄÜÓÃ±äÁ¿");
+				{ //È«ï¿½Ö±ï¿½ï¿½ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã±ï¿½ï¿½ï¿½
+					printf("È«ï¿½Ö±ï¿½ï¿½ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã±ï¿½ï¿½ï¿½");
 					throw "Error";
 				}
-				tempArr[index] = tempAns;
+				tempArr[Offset] = tempAns;
 				return 0;
 			}
 		}
@@ -1457,7 +1457,7 @@ int InitVal()
 			VarInInit = false;
 			int result = GlobalAddExp();
 			if (VarInInit)
-			{ //È«¾Ö±äÁ¿³õÊ¼»¯²»ÄÜÓÃ±äÁ¿
+			{ //È«ï¿½Ö±ï¿½ï¿½ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã±ï¿½ï¿½ï¿½
 				throw "Error";
 			}
 			return result;
@@ -1505,7 +1505,7 @@ int FuncType()
 	return 0;
 }
 int Ident()
-{ //Ö»ÓÃÓÚFuncDef
+{ //Ö»ï¿½ï¿½ï¿½ï¿½FuncDef
 	if (symNow.type == 2)
 	{
 		fprintf(fpout, "@main");
@@ -1675,7 +1675,7 @@ int Stmt()
 		return 0;
 	}
 	else if (symNow.type == 5)
-	{ //Ìõ¼þÓï¾ä
+	{ //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		symNow = sym[symst++];
 		if (symNow.type != 55)
 		{
@@ -1740,7 +1740,7 @@ int Stmt()
 		return 0;
 	}
 	else if (symNow.type == 7)
-	{ //Ñ­»·
+	{ //Ñ­ï¿½ï¿½
 		symNow = sym[symst++];
 		if (symNow.type != 55)
 		{
@@ -1857,7 +1857,7 @@ int AddExp()
 	// if (ret != 0)
 	// 	return ret;
 	if (sym[symst].type == 59 || sym[symst].type == 62)
-	{ //¶ÁºóÃæÒ»¸ö´Ê£¬ÅÐ¶ÏÊÇ·ñÕýÈ·
+	{ //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½Ê£ï¿½ï¿½Ð¶ï¿½ï¿½Ç·ï¿½ï¿½ï¿½È·
 		symNow = sym[symst++];
 	}
 	while (symNow.type == 59 || symNow.type == 62)
@@ -1868,14 +1868,14 @@ int AddExp()
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 2;
-			tempExpStack->value = 1; //ÊÇ¼Ó·¨
+			tempExpStack->value = 1; //ï¿½Ç¼Ó·ï¿½
 			ExpStack.push(*tempExpStack);
 		}
 		else
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 2;
-			tempExpStack->value = 2; //ÊÇ¼õ·¨
+			tempExpStack->value = 2; //ï¿½Ç¼ï¿½ï¿½ï¿½
 			ExpStack.push(*tempExpStack);
 		}
 		ret = MulExp();
@@ -1883,7 +1883,7 @@ int AddExp()
 			return ret;
 		Operation();
 		if (sym[symst].type == 59 || sym[symst].type == 62)
-		{ //¶ÁºóÃæÒ»¸ö´Ê£¬ÅÐ¶ÏÊÇ·ñÕýÈ·
+		{ //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½Ê£ï¿½ï¿½Ð¶ï¿½ï¿½Ç·ï¿½ï¿½ï¿½È·
 			symNow = sym[symst++];
 		}
 	}
@@ -1897,7 +1897,7 @@ int MulExp()
 	if (ret != 0)
 		return ret;
 	if (sym[symst].type == 60 || sym[symst].type == 61 || sym[symst].type == 63)
-	{ //¶ÁºóÃæÒ»¸ö´Ê£¬ÅÐ¶ÏÊÇ·ñÕýÈ·
+	{ //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½Ê£ï¿½ï¿½Ð¶ï¿½ï¿½Ç·ï¿½ï¿½ï¿½È·
 		symNow = sym[symst++];
 	}
 	while (symNow.type == 60 || symNow.type == 61 || symNow.type == 63)
@@ -1908,21 +1908,21 @@ int MulExp()
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 2;
-			tempExpStack->value = 3; //ÊÇ³Ë·¨
+			tempExpStack->value = 3; //ï¿½Ç³Ë·ï¿½
 			ExpStack.push(*tempExpStack);
 		}
 		else if (tempSym.type == 61)
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 2;
-			tempExpStack->value = 4; //ÊÇ³ý·¨
+			tempExpStack->value = 4; //ï¿½Ç³ï¿½ï¿½ï¿½
 			ExpStack.push(*tempExpStack);
 		}
 		else
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 2;
-			tempExpStack->value = 5; //ÊÇÈ¡Óà
+			tempExpStack->value = 5; //ï¿½ï¿½È¡ï¿½ï¿½
 			ExpStack.push(*tempExpStack);
 		}
 		RetNum = UnaryExp();
@@ -1930,7 +1930,7 @@ int MulExp()
 			return ret;
 		Operation();
 		if (sym[symst].type == 60 || sym[symst].type == 61 || sym[symst].type == 63)
-		{ //¶ÁºóÃæÒ»¸ö´Ê£¬ÅÐ¶ÏÊÇ·ñÕýÈ·
+		{ //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½Ê£ï¿½ï¿½Ð¶ï¿½ï¿½Ç·ï¿½ï¿½ï¿½È·
 			symNow = sym[symst++];
 		}
 	}
@@ -1970,24 +1970,24 @@ void UnaryOp()
 	if (symNow.type == 59 || symNow.type == 62 || symNow.type == 71)
 	{
 		if (symNow.type == 59)
-		{ //¶àÓàÒ»¸ö+-ºÅ£¬ÔòÒÔ´ËÀ´ÅÐ¶ÏNumberµÄÕý¸º
+		{ //ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½+-ï¿½Å£ï¿½ï¿½ï¿½ï¿½Ô´ï¿½ï¿½ï¿½ï¿½Ð¶ï¿½Numberï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 4;
-			tempExpStack->value = 1; //ÊÇÕýºÅ
+			tempExpStack->value = 1; //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 			ExpStack.push(*tempExpStack);
 		}
 		else if (symNow.type == 62)
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 4;
-			tempExpStack->value = 2; //ÊÇ¸ººÅ
+			tempExpStack->value = 2; //ï¿½Ç¸ï¿½ï¿½ï¿½
 			ExpStack.push(*tempExpStack);
 		}
 		else
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 4;
-			tempExpStack->value = 3; //ÊÇNot,¼´£¡
+			tempExpStack->value = 3; //ï¿½ï¿½Not,ï¿½ï¿½ï¿½ï¿½
 			ExpStack.push(*tempExpStack);
 		}
 	}
@@ -2047,7 +2047,7 @@ int PrimaryExp()
 }
 int LVal()
 {
-	//¼ì²éÊÇ·ñÊÇÒÑ¾­¶¨ÒåµÄ±äÁ¿,ÏÖÔÚÔÚµ±Ç°µÄBVarMapÕÒ
+	//ï¿½ï¿½ï¿½ï¿½Ç·ï¿½ï¿½ï¿½ï¿½Ñ¾ï¿½ï¿½ï¿½ï¿½ï¿½Ä±ï¿½ï¿½ï¿½,ï¿½ï¿½ï¿½ï¿½ï¿½Úµï¿½Ç°ï¿½ï¿½BVarMapï¿½ï¿½
 	bool declared = false;
 	varIt = BVarMap.find(symNow.name);
 	if (varIt != BVarMap.end())
@@ -2055,11 +2055,11 @@ int LVal()
 		declared = true;
 	}
 
-	//ÕÒ²»µ½ÁË£¬ÕÒÍâ²¿µÄMap
+	//ï¿½Ò²ï¿½ï¿½ï¿½ï¿½Ë£ï¿½ï¿½ï¿½ï¿½â²¿ï¿½ï¿½Map
 	for (VarMapListIt = VarMapList.rbegin(); VarMapListIt != VarMapList.rend(); ++VarMapListIt)
 	{
 		if (declared)
-		{ //ÔÚBVarMapÒÑ¾­ÕÒµ½ÁË
+		{ //ï¿½ï¿½BVarMapï¿½Ñ¾ï¿½ï¿½Òµï¿½ï¿½ï¿½
 			break;
 		}
 		varIt = (*VarMapListIt).find(symNow.name);
@@ -2073,7 +2073,7 @@ int LVal()
 		}
 	}
 	if (!declared)
-	{ //»¹ÊÇÃ»ÕÒµ½£¬ÔÚÈ«¾Ö±äÁ¿ÕÒ
+	{ //ï¿½ï¿½ï¿½ï¿½Ã»ï¿½Òµï¿½ï¿½ï¿½ï¿½ï¿½È«ï¿½Ö±ï¿½ï¿½ï¿½ï¿½ï¿½
 		varIt = GVarMap.find(symNow.name);
 		if (varIt != GVarMap.end())
 		{
@@ -2093,10 +2093,10 @@ int LVal()
 		isArray = true;
 	}
 	int tempDimension = (*varIt).second.dimension;
-	int base = 0;	   //À¨ºÅÊý
-	int tempindex = 0; //Æ«ÒÆÊý
-	int temp = 1;	   //Æ«ÒÆ»ùÊý
-	int bracketCheck = 0;  //¼ì²âÎ¬ÊýÊÇ·ñÕýÈ·
+	int base = 0;	   //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	int tempindex = 0; //Æ«ï¿½ï¿½ï¿½ï¿½
+	int temp = 1;	   //Æ«ï¿½Æ»ï¿½ï¿½ï¿½
+	int bracketCheck = 0;  //ï¿½ï¿½ï¿½Î¬ï¿½ï¿½ï¿½Ç·ï¿½ï¿½ï¿½È·
 	fprintf(fpout,"    %%x%d = alloca i32\n",++VarMapSt);
 	fprintf(fpout,"    store i32 0, i32* %%x%d\n",VarMapSt);
 	fprintf(fpout,"    %%x%d = load i32, i32* %%x%d\n",++VarMapSt,VarMapSt);
@@ -2146,14 +2146,14 @@ int LVal()
 		ExpStack.pop();
 	}
 	if(bracketCheck != (*varIt).second.dimension){
-		printf("LvalÊý×éµÄÎ¬Êý´íÎó");
+		printf("Lvalï¿½ï¿½ï¿½ï¿½ï¿½Î¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½");
 		throw "Error";
 	}
 	if ((*varIt).second.isConst)
-	{ //Õâ¸ö±äÁ¿ÊÇ³£Á¿
+	{ //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç³ï¿½ï¿½ï¿½
 		LvalIsConst = true;
 	}
-	else //Õâ¸ö±äÁ¿²»ÊÇ³£Á¿£¬Èç¹ûËüÔÚ³£Á¿µÄ³õÊ¼»¯Ê½×ÓÖÐ£¬Ôò·Ç·¨¡£
+	else //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç³ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú³ï¿½ï¿½ï¿½ï¿½Ä³ï¿½Ê¼ï¿½ï¿½Ê½ï¿½ï¿½ï¿½Ð£ï¿½ï¿½ï¿½Ç·ï¿½ï¿½ï¿½
 	{
 		VarInInit = true;
 	}
@@ -2163,18 +2163,18 @@ int LVal()
 		if(!IsGlobalVal)
 			fprintf(fpout, "    %%x%d = getelementptr [%d x i32], [%d x i32]* %%x%d, i32 0, i32 %%x%d\n", ++VarMapSt, (*varIt).second.arraySize, (*varIt).second.arraySize, (*varIt).second.registerNum, VarMapSt);
 		else fprintf(fpout, "    %%x%d = getelementptr [%d x i32], [%d x i32]* @x%d, i32 0, i32 %%x%d\n", ++VarMapSt, (*varIt).second.arraySize, (*varIt).second.arraySize, (*varIt).second.registerNum, VarMapSt);
-		IsGlobalVal = false;  //·ÀÖ¹loadµÄÊ±ºòÊ¹ÓÃÈ«¾Ö±äÁ¿µÄÊä³ö
+		IsGlobalVal = false;  //ï¿½ï¿½Ö¹loadï¿½ï¿½Ê±ï¿½ï¿½Ê¹ï¿½ï¿½È«ï¿½Ö±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		return VarMapSt;
 	}
 	// if ((*varIt).second.isConst)
-	// { //Õâ¸ö±äÁ¿ÊÇ³£Á¿
+	// { //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç³ï¿½ï¿½ï¿½
 	// 	LvalIsConst = true;
 	// }
-	// else //Õâ¸ö±äÁ¿²»ÊÇ³£Á¿£¬Èç¹ûËüÔÚ³£Á¿µÄ³õÊ¼»¯Ê½×ÓÖÐ£¬Ôò·Ç·¨¡£
+	// else //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç³ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú³ï¿½ï¿½ï¿½ï¿½Ä³ï¿½Ê¼ï¿½ï¿½Ê½ï¿½ï¿½ï¿½Ð£ï¿½ï¿½ï¿½Ç·ï¿½ï¿½ï¿½
 	// {
 	// 	VarInInit = true;
 	// }
-	return (*varIt).second.registerNum; //·µ»Ø¼Ä´æÆ÷Êý×Ö
+	return (*varIt).second.registerNum; //ï¿½ï¿½ï¿½Ø¼Ä´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 }
 void Cond()
 {
@@ -2223,7 +2223,7 @@ void LOrExp()
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 2;
-			tempExpStack->value = 7; //ÊÇ||
+			tempExpStack->value = 7; //ï¿½ï¿½||
 			ExpStack.push(*tempExpStack);
 		}
 		LAndExp();
@@ -2259,7 +2259,7 @@ void LAndExp()
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 2;
-			tempExpStack->value = 6; //ÊÇ&&
+			tempExpStack->value = 6; //ï¿½ï¿½&&
 			ExpStack.push(*tempExpStack);
 		}
 		EqExp();
@@ -2292,14 +2292,14 @@ void EqExp()
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 5;
-			tempExpStack->value = 1; //ÊÇÏàµÈ
+			tempExpStack->value = 1; //ï¿½ï¿½ï¿½ï¿½ï¿½
 			ExpStack.push(*tempExpStack);
 		}
 		else
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 5;
-			tempExpStack->value = 2; //ÊÇ²»ÏàµÈ
+			tempExpStack->value = 2; //ï¿½Ç²ï¿½ï¿½ï¿½ï¿½
 			ExpStack.push(*tempExpStack);
 		}
 		EqExp();
@@ -2322,28 +2322,28 @@ void RelExp()
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 5;
-			tempExpStack->value = 3; //ÊÇÐ¡ÓÚ
+			tempExpStack->value = 3; //ï¿½ï¿½Ð¡ï¿½ï¿½
 			ExpStack.push(*tempExpStack);
 		}
 		else if (tempSym.type == 65)
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 5;
-			tempExpStack->value = 4; //ÊÇ´óÓÚ
+			tempExpStack->value = 4; //ï¿½Ç´ï¿½ï¿½ï¿½
 			ExpStack.push(*tempExpStack);
 		}
 		else if (tempSym.type == 69)
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 5;
-			tempExpStack->value = 5; //ÊÇÐ¡ÓÚµÈÓÚ
+			tempExpStack->value = 5; //ï¿½ï¿½Ð¡ï¿½Úµï¿½ï¿½ï¿½
 			ExpStack.push(*tempExpStack);
 		}
 		else
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 5;
-			tempExpStack->value = 6; //ÊÇ´óÓÚµÈÓÚ
+			tempExpStack->value = 6; //ï¿½Ç´ï¿½ï¿½Úµï¿½ï¿½ï¿½
 			ExpStack.push(*tempExpStack);
 		}
 		AddExp();
@@ -2532,7 +2532,7 @@ void OperationUnaryOp()
 	struct ExpElem op = ExpStack.top();
 	ExpStack.pop();
 
-	//ÒÑ¾­µ½Õý³£µÄ¼Ó¼õ·¨ÁË
+	//ï¿½Ñ¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼Ó¼ï¿½ï¿½ï¿½ï¿½ï¿½
 	if (op.type != 4)
 	{
 		ExpStack.push(op);
@@ -2653,7 +2653,7 @@ int GlobalAddExp()
 {
 	int RetNum = GlobalMulExp();
 	if (sym[symst].type == 59 || sym[symst].type == 62)
-	{ //¶ÁºóÃæÒ»¸ö´Ê£¬ÅÐ¶ÏÊÇ·ñÕýÈ·
+	{ //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½Ê£ï¿½ï¿½Ð¶ï¿½ï¿½Ç·ï¿½ï¿½ï¿½È·
 		symNow = sym[symst++];
 	}
 	while (symNow.type == 59 || symNow.type == 62)
@@ -2669,7 +2669,7 @@ int GlobalAddExp()
 			RetNum -= GlobalMulExp();
 		}
 		if (sym[symst].type == 59 || sym[symst].type == 62)
-		{ //¶ÁºóÃæÒ»¸ö´Ê£¬ÅÐ¶ÏÊÇ·ñÕýÈ·
+		{ //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½Ê£ï¿½ï¿½Ð¶ï¿½ï¿½Ç·ï¿½ï¿½ï¿½È·
 			symNow = sym[symst++];
 		}
 	}
@@ -2679,7 +2679,7 @@ int GlobalMulExp()
 {
 	int RetNum = GlobalUnaryExp();
 	if (sym[symst].type == 60 || sym[symst].type == 61 || sym[symst].type == 63)
-	{ //¶ÁºóÃæÒ»¸ö´Ê£¬ÅÐ¶ÏÊÇ·ñÕýÈ·
+	{ //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½Ê£ï¿½ï¿½Ð¶ï¿½ï¿½Ç·ï¿½ï¿½ï¿½È·
 		symNow = sym[symst++];
 	}
 	while (symNow.type == 60 || symNow.type == 61 || symNow.type == 63)
@@ -2699,7 +2699,7 @@ int GlobalMulExp()
 			RetNum %= GlobalUnaryExp();
 		}
 		if (sym[symst].type == 60 || sym[symst].type == 61 || sym[symst].type == 63)
-		{ //¶ÁºóÃæÒ»¸ö´Ê£¬ÅÐ¶ÏÊÇ·ñÕýÈ·
+		{ //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½Ê£ï¿½ï¿½Ð¶ï¿½ï¿½Ç·ï¿½ï¿½ï¿½È·
 			symNow = sym[symst++];
 		}
 	}
@@ -2713,7 +2713,7 @@ int GlobalUnaryExp()
 	{
 		int PositiveNum = 1;
 		if (symNow.type == 59)
-		{ //¶àÓàÒ»¸ö+-ºÅ£¬ÔòÒÔ´ËÀ´ÅÐ¶ÏNumberµÄÕý¸º
+		{ //ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½+-ï¿½Å£ï¿½ï¿½ï¿½ï¿½Ô´ï¿½ï¿½ï¿½ï¿½Ð¶ï¿½Numberï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 			PositiveNum = PositiveNum;
 		}
 		else
@@ -2767,7 +2767,7 @@ int GlobalPrimaryExp()
 			throw "Error";
 		}
 		if ((*varIt).second.isConst)
-		{ //Õâ¸ö±äÁ¿ÊÇ³£Á¿
+		{ //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç³ï¿½ï¿½ï¿½
 			LvalIsConst = true;
 		}
 		else

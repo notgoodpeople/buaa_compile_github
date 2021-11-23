@@ -12,98 +12,98 @@
 using namespace std;
 char str[3024];
 char token[2560];
-int sst = 0;   //��ʾ���Ӷ���λ�� sentenceStart
-int tst = 0;   //��ʾ�ʶ���λ�� tokenStart
-int symed = 0; //��ʾ�洢���ŵĴ�������λ��
-int symst = 0; //��ʾ �洢���ŵĴ���ĵ�ǰ��ȡ
+int sst = 0;   //表示句子读的位置 sentenceStart
+int tst = 0;   //表示词读的位置 tokenStart
+int symed = 0; //表示存储符号的词组的最后位置
+int symst = 0; //表示 存储符号的词组的当前读取
 char key[12][15] = {"int", "main", "return", "const", "if", "else", "while", "break", "continue"};
 char keyOut[12][15] = {"Int", "Main", "Return", "Const", "If", "Else", "While", "Break", "Continue"};
 char funcCall[9][15] = {"getint", "putint", "getch", "putch"};
 char funcCallOut[9][15] = {"Func(getint)", "Func(putint)", "Func(getch)", "Func(putch)"};
 struct symType
-{ //���ڷ����Ĵ�
+{ //正在分析的词
 	string name;
-	/*���ͣ�1~10 Ϊ�ؼ��֣�int��main��return��const��if��else, while, break ,continue
-		11~20Ϊ�������ã�getint putint getch putch
+	/*类型：1~10 为关键字：int，main，return，const，if，else, while, break ,continue
+		11~20为函数调用：getint putint getch putch
 		21 Number 22 Ident
-		51~ ���� 51 == 52 = 53 , 54 ; 55 ( 56 ) 57 { 58 } 59 + 60 *
+		51~ 符号 51 == 52 = 53 , 54 ; 55 ( 56 ) 57 { 58 } 59 + 60 *
 				61 / 62 - 63 % 64 < 65 > 66 || 67 && 68 != 69 <= 70 >=
 				71 ! 72 [ 73 ]
 	*/
-	int value; //�����number��  �ᴢ��int�͵�ֵ
+	int value; //如果是number类  会储存int型的值
 	int type;
 } sym[10050];
 struct symType symNow;
-int ret = 0;		//��������ķ���ֵ
-int tempRetNum = 0; //EXP()ʽ���е���ʱ����ֵ
+int ret = 0;		//程序出错的返回值
+int tempRetNum = 0; //EXP()式子中的临时返回值
 struct ExpElem
 {
-	int type; //1 Exp�е����֣�2 �������3 �Ĵ�����4 UnaryOp, 5 �ȽϷ���
+	int type; //1 Exp中的数字，2 运算符，3 寄存器，4 UnaryOp, 5 比较符号
 	/* 
-	1�����ֵ�ֵ
-	2��1�ӷ���2������3�˷���4������5ȡ��, 6 &&, 7 ||
-	3���Ĵ����ı��
-	4��1���� 2���� 3 Not
+	1：数字的值
+	2：1加法，2减法，3乘法，4除法，5取余, 6 &&, 7 ||
+	3：寄存器的标号
+	4：1正号 2负号 3 Not
 	5: 1 == 2 != 3 < 4 > 5<= 6>=
 	*/
 	int value;
-	int value_1; //i1ʱ��ֵ������type=3ʱʹ��
+	int value_1; //i1时的值，仅在type=3时使用
 };
 struct ExpElem *tempExpStack;
-stack<struct ExpElem> ExpStack; //�������ɼ���ֵLLVM IR��ջ
+stack<struct ExpElem> ExpStack; //用于生成计算值LLVM IR的栈
 bool VarInInit = false;
 bool LvalIsConst = false;
 struct VarItem
 {
-	bool isConst;	 //�Ƿ��ǳ���
-	int registerNum; //�Ĵ����ĺ���
-	int globalNum;	 //������ȫ�ֱ������ǳ���ʱʹ��
-	int dimension;	 //��������飬�Ǽ�ά����(�ڱ��������ж���Ϊһά������ʹ��)
-	int d[10];		 // ��a[3][4]�����飬��d[0]=3 d[1]=4
-	int arraySize;	 //�������� ����Ĵ�С
+	bool isConst;	 //是否是常量
+	int registerNum; //寄存器的号码
+	int globalNum;	 //仅在是全局变量且是常量时使用
+	int dimension;	 //如果是数组，是几维数组(在本编译器中都作为一维数组来使用)
+	int d[10];		 // 如a[3][4]的数组，则d[0]=3 d[1]=4
+	int arraySize;	 //对于数组 数组的大小
 };
-int Offset = 0;								 //��ά�����ʼ��ʱ��ƫ����
-int baseNum = 0;							 //��ά����ƫ����������ʹ�õģ����������Ÿ�����ֵ
-bool arrayDef = false;						 //��initʱ���жϵ���init�������ǲ���array
-int tempArr[1000];                           //��initȫ������ʱʹ�õ���ʱ���顣
-map<string, struct VarItem>::iterator varIt; //Varmap����������
-map<string, struct VarItem> GVarMap;		 //ȫ�ֱ�����Map
-bool GlobalDef;								 //��ֵΪtrueʱ�������������ڶ���ȫ�ֱ���
-bool IsGlobalVal;							 //��ֵΪtrueʱ��˵����ǰload�ı�����ȫ�ֱ���
-map<string, struct VarItem> BVarMap;		 //������еľֲ�Map
+int Offset = 0;								 //多维数组初始化时的偏移量
+int baseNum = 0;							 //多维数组偏移量计算中使用的，代表左花括号个数的值
+bool arrayDef = false;						 //在init时，判断调用init函数的是不是array
+int tempArr[1000];                           //在init全局数组时使用的临时数组。
+map<string, struct VarItem>::iterator varIt; //Varmap变量迭代器
+map<string, struct VarItem> GVarMap;		 //全局变量的Map
+bool GlobalDef;								 //当值为true时，代表现在正在定义全局变量
+bool IsGlobalVal;							 //当值为true时，说明当前load的变量是全局变量
+map<string, struct VarItem> BVarMap;		 //代码块中的局部Map
 list< map<string, struct VarItem> > VarMapList;
-list< map<string, struct VarItem> >::reverse_iterator VarMapListIt; //VarMapList���������
-int VarMapSt = 0;												  //��ǰ�¼Ĵ�����ֵ
-int GVarMapst = 10000;											  //��ǰȫ�ֱ����Ĵ�����ֵ,�;ֲ������Ĵ������֣���10000��ʼ
-struct VarItem *arrayDecl;										  //��������ĳ�ʼ������Ҫ�������鶨��ʱ����Ϣ�Ե���
-// struct CondBlock{       //����������Ӧ�Ĵ������Ϣ
-// 	int registerNum; //�Ĵ�����ֵ
-// 	int type;  //���Ǹ�ʲô������ 1 IF 2 Else 3 LOrd 4 LAnd 5 main
-// 	int num;  //����������ǵڼ���
-// 	bool wantB;  //��Ҫ��һ������������ʲô����ֵ
+list< map<string, struct VarItem> >::reverse_iterator VarMapListIt; //VarMapList反向迭代器
+int VarMapSt = 0;												  //当前新寄存器的值
+int GVarMapst = 10000;											  //当前全局变量寄存器的值,和局部变量寄存器区分，从10000开始
+struct VarItem *arrayDecl;										  //对于数组的初始化，需要保留数组定义时的信息以调用
+// struct CondBlock{       //条件变量对应的代码块信息
+// 	int registerNum; //寄存器的值
+// 	int type;  //这是个什么类型呢 1 IF 2 Else 3 LOrd 4 LAnd 5 main
+// 	int num;  //在这个类型是第几个
+// 	bool wantB;  //想要上一个条件变量是什么布尔值
 // };
-// map<int, struct CondBlock> CondBlockMap;  //map[type]��num�������ˡ�
-int condCount = 1; //���ǵڼ���cond����
+// map<int, struct CondBlock> CondBlockMap;  //map[type]的num到多少了。
+int condCount = 1; //该是第几个cond块了
 bool condHasIcmp = false;
-//���µ�ջ������fprintf��תlabel��ջ
+//以下的栈是用来fprintf跳转label的栈
 stack<int> condCountFalseStack;
 stack<int> condCountTrueStack;
 stack<int> whileCountFalseStack;
 stack<int> whileCountTrueStack;
 stack<int> continueCountTrueStack;
-map<bool, int> condCountMap; //û���õ�����boolֵ���ж�����������ı��
+map<bool, int> condCountMap; //没有用到，用bool值来判断条件变量块的编号
 
-int mainCount = 1;		//׼��������������ѭ���У�������һ�㣬��һ������ m_{{maincount}}
-int whileCondCount = 1; // ѭ���е�Cond�ı��
+int mainCount = 1;		//准备从条件语句或者循环中，返回上一层，上一层的序号 m_{{maincount}}
+int whileCondCount = 1; // 循环中的Cond的编号
 struct FuncItem
 {
-	int RetType;		//������������ 1Ϊint 0Ϊvoid
-	vector<int> params; //���������б�
-	string funcName;	//LLVM IR�еĺ�����
-	int paramsNum;		//������������
+	int RetType;		//函数返回类型 1为int 0为void
+	vector<int> params; //函数参数列表
+	string funcName;	//LLVM IR中的函数名
+	int paramsNum;		//函数参数个数
 };
 map<string, struct FuncItem> FuncMap;
-map<string, struct FuncItem>::iterator funcIt; //Funcmap����������
+map<string, struct FuncItem>::iterator funcIt; //Funcmap变量迭代器
 int LVal();
 int getToken();
 int CompUnit();
@@ -171,9 +171,9 @@ int main(int argc, char *argv[])
 	return 0;
 }
 
-//����ת��
+//进制转换
 void ChangeTen(int n, char str[])
-{ //��n������ת����10������
+{ //将n进制数转换成10进制数
 	int len = strlen(str), i, sum = 0, t = 1;
 	for (i = len - 1; i >= 0; i--)
 	{
@@ -195,13 +195,13 @@ void ChangeTen(int n, char str[])
 	sym[symed].name = "Number";
 	sym[symed++].type = 21;
 }
-//�ڱ���ʽ���㣬Exp()�ຯ��ʱ ʹ�øú�������
+//在表达式计算，Exp()类函数时 使用该函数报错
 void error()
 {
 	ret = 120;
 	printf("\nExp() error");
 }
-//�ʷ�����
+//词法分析
 int getToken()
 {
 	int note = 0;
@@ -239,7 +239,7 @@ int getToken()
 				note = 1;
 				sst++;
 			}
-			//Ident���߹ؼ���
+			//Ident或者关键字
 			else if ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || ch == '_')
 			{
 				token[tst++] = ch;
@@ -260,7 +260,7 @@ int getToken()
 				}
 				token[tst] = '\0';
 				tst = 0;
-				//�ж��Ƿ��ǹؼ���
+				//判断是否是关键字
 				for (int i = 0; i <= 8; i++)
 				{
 					if (strcmp(token, key[i]) == 0)
@@ -270,7 +270,7 @@ int getToken()
 						iskey = 1;
 					}
 				}
-				//�ж��Ƿ��ǵ��ú���
+				//判断是否是调用函数
 				for (int i = 0; i <= 3; i++)
 				{
 					if (strcmp(token, funcCall[i]) == 0)
@@ -286,7 +286,7 @@ int getToken()
 					sym[symed++].type = 22;
 				}
 			}
-			//Number��
+			//Number类
 			else if (ch >= '0' && ch <= '9')
 			{
 				if (ch != '0')
@@ -304,7 +304,7 @@ int getToken()
 				}
 				else
 				{
-					//16����
+					//16进制
 					if (str[sst + 1] == 'x' || str[sst + 1] == 'X')
 					{
 						sst++;
@@ -322,13 +322,13 @@ int getToken()
 							tst = 0;
 							ChangeTen(16, token);
 						}
-						//16����Number����
+						//16进制Number出错
 						else
 						{
 							return 16;
 						}
 					}
-					//8����
+					//8进制
 					else
 					{
 						if (str[sst + 1] >= '0' && str[sst + 1] <= '8')
@@ -536,7 +536,7 @@ int getToken()
 	}
 	return 0;
 }
-//��ʼ����������
+//初始化函数调用
 void initFunc()
 {
 	//int getint();
@@ -587,7 +587,7 @@ void initFunc()
 	//void memset(pointer,0,size *sizeof(int))
 	fprintf(fpout, "declare void @memset(i32*, i32, i32)\n");
 }
-//��ʼ����������������
+//初始化条件变量的命名
 // void initCond(){
 // 	CondBlockMap[1].num = 1;
 // 	CondBlockMap[2].num = 1;
@@ -595,7 +595,7 @@ void initFunc()
 // 	CondBlockMap[4].num = 1;
 // 	CondBlockMap[5].num = 1;
 // }
-//�﷨����
+//语法分析
 int CompUnit()
 {
 	initFunc();
@@ -637,7 +637,7 @@ int Decl()
 }
 int ConstDecl()
 {
-	//const��Decl()���Ѿ����
+	//const在Decl()中已经检测
 
 	ret = Btype();
 	if (ret != 0)
@@ -684,6 +684,7 @@ int ConstDef()
 		struct VarItem *tempVarItem = (struct VarItem *)malloc(sizeof(struct VarItem));
 		tempVarItem->isConst = true;
 		tempVarItem->registerNum = ++VarMapSt;
+		tempVarItem->dimension = 0;
 		string tempName = symNow.name;
 		int tempDimesion = 0;
 		if (sym[symst].type == 72)
@@ -698,7 +699,7 @@ int ConstDef()
 			symNow = sym[symst++];
 			if (symNow.type != 73)
 			{
-				printf("error in ConstDef ���� ]");
+				printf("error in ConstDef 数组 ]");
 				throw "Error";
 			}
 			if (sym[symst].type == 72)
@@ -706,7 +707,7 @@ int ConstDef()
 				symNow = sym[symst++];
 			}
 		}
-		if (tempDimesion != 0) //������
+		if (tempDimesion != 0) //是数组
 		{
 			tempVarItem->dimension = tempDimesion;
 			int arraySize = 1;
@@ -716,7 +717,7 @@ int ConstDef()
 			}
 			tempVarItem->arraySize = arraySize;
 			BVarMap[tempName] = *tempVarItem;
-			arrayDecl = tempVarItem; //�ѵ�ǰ�����������Ϣ����InitVal��
+			arrayDecl = tempVarItem; //把当前的数组变量信息留到InitVal用
 			if (tempDimesion == 0)
 				fprintf(fpout, "    %%x%d = alloca i32\n", VarMapSt);
 			else
@@ -741,7 +742,7 @@ int ConstDef()
 			// if (ret != 0)
 			// 	return ret;
 		}
-		else{
+		else{            //不是数组
 			BVarMap[symNow.name] = *tempVarItem;
 			fprintf(fpout, "    %%x%d = alloca i32\n", VarMapSt);
 			symNow = sym[symst++];
@@ -796,13 +797,14 @@ int ConstDef()
 	{
 		if ((GVarMap.count(symNow.name)) == 1)
 		{
-			printf("error in VarDef() GVarMap");
+			printf("error in ConstDef() GVarMap");
 			throw "Error";
 		}
 		struct VarItem *tempVarItem = (struct VarItem *)malloc(sizeof(struct VarItem));
 		tempVarItem->isConst = true;
 		tempVarItem->registerNum = ++GVarMapst;
 		tempVarItem->globalNum = 0;
+		tempVarItem->dimension = 0;
 		string tempName = symNow.name;
 		int tempDimesion = 0;
 		if (sym[symst].type == 72)
@@ -817,7 +819,7 @@ int ConstDef()
 			symNow = sym[symst++];
 			if (symNow.type != 73)
 			{
-				printf("error in ConstDef ���� ]");
+				printf("error in ConstDef 数组 ]");
 				throw "Error";
 			}
 			if (sym[symst].type == 72)
@@ -825,7 +827,7 @@ int ConstDef()
 				symNow = sym[symst++];
 			}
 		}
-		if (tempDimesion != 0) //������
+		if (tempDimesion != 0) //是数组
 		{
 			tempVarItem->dimension = tempDimesion;
 			int arraySize = 1;
@@ -835,7 +837,7 @@ int ConstDef()
 			}
 			tempVarItem->arraySize = arraySize;
 			GVarMap[tempName] = *tempVarItem;
-			arrayDecl = tempVarItem; //�ѵ�ǰ�����������Ϣ����InitVal��
+			arrayDecl = tempVarItem; //把当前的数组变量信息留到InitVal用
 			if (sym[symst].type == 54 || sym[symst].type == 53)
 			{
 				fprintf(fpout, "@x%d = dso_local global [%d x i32] zeroinitializer\n", GVarMapst, arraySize);
@@ -853,7 +855,7 @@ int ConstDef()
 			arrayDef = true;
 			memset(tempArr, 0, 1000*sizeof(int));
 			if(arraySize>=950){
-				printf("tempArr���鿪С��");
+				printf("tempArr数组开小了");
 			}
 			ret = ConstInitVal();
 			fprintf(fpout, "@x%d = dso_local global [%d x i32] [",GVarMapst, arraySize);
@@ -863,7 +865,7 @@ int ConstDef()
 			fprintf(fpout,"i32 %d]\n",tempArr[arraySize-1]);
 		}
 		else{
-			if(sym[symst].type == 54 || sym[symst].type == 53){     //û�г�ʼ��
+			if(sym[symst].type == 54 || sym[symst].type == 53){     //没有初始化
 			GVarMap[tempName] = *tempVarItem;
 			fprintf(fpout,"@x%d = dso_local global i32 %d\n",GVarMapst,tempVarItem->globalNum);
 			return 0;
@@ -895,7 +897,7 @@ int ConstInitVal()
 		if (arrayDef)
 		{
 			if (symNow.type == 57)
-			{ //������  �����ʼ��
+			{ //花括号  数组初始化
 				symNow = sym[symst++];
 				baseNum++;
 				if (symNow.type == 58)
@@ -911,7 +913,7 @@ int ConstInitVal()
 					}
 					int savedIndex = Offset;
 					while (symNow.type == 53)
-					{ //ͬһ���������ڣ���������һλ
+					{ //同一个花括号内，逗号右移一位
 						symNow = sym[symst++];
 						int temp = 1;
 						for (int i = arrayDecl->dimension - 1; i >= baseNum; i--)
@@ -928,7 +930,7 @@ int ConstInitVal()
 					symNow = sym[symst++];
 					if (symNow.type != 58)
 					{
-						printf("error in InitVal ���� }");
+						printf("error in InitVal 数组 }");
 						throw "Error";
 					}
 					Offset = savedIndex;
@@ -941,7 +943,7 @@ int ConstInitVal()
 				int tempVarSt = VarMapSt;
 				VarInInit = false;
 				ConstExp();
-				if (VarInInit) //������ʼ�������ñ���
+				if (VarInInit) //常量初始化不能用变量
 				{
 					throw "Error";
 				}
@@ -958,7 +960,7 @@ int ConstInitVal()
 					}
 					else
 					{
-						printf("error in InitVal ����");
+						printf("error in InitVal 数组");
 						throw "Error";
 						return ret;
 					}
@@ -971,7 +973,7 @@ int ConstInitVal()
 		{ //ConstInitVal -> ConstExp
 			VarInInit = false;
 			ConstExp();
-			if (VarInInit) //������ʼ�������ñ���
+			if (VarInInit) //常量初始化不能用变量
 			{
 				throw "Error";
 			}
@@ -998,7 +1000,7 @@ int ConstInitVal()
 					}
 					int savedIndex = Offset;
 					while (symNow.type == 53)
-					{ //ͬһ���������ڣ���������һλ
+					{ //同一个花括号内，逗号右移一位
 						symNow = sym[symst++];
 						int temp = 1;
 						for (int i = arrayDecl->dimension - 1; i >= baseNum; i--)
@@ -1015,7 +1017,7 @@ int ConstInitVal()
 					symNow = sym[symst++];
 					if (symNow.type != 58)
 					{
-						printf("error in InitVal Global���� }");
+						printf("error in InitVal Global数组 }");
 						throw "Error";
 					}
 					Offset = savedIndex;
@@ -1027,8 +1029,8 @@ int ConstInitVal()
 				int tempVarSt = VarMapSt;
 				int tempAns = GlobalAddExp();
 				if (VarInInit)
-				{ //ȫ�ֱ�����ʼ�������ñ���
-					printf("ȫ�ֱ�����ʼ�������ñ���");
+				{ //全局变量初始化不能用变量
+					printf("全局变量初始化不能用变量");
 					throw "Error";
 				}
 				tempArr[Offset] = tempAns;
@@ -1040,7 +1042,7 @@ int ConstInitVal()
 			VarInInit = false;
 			ConstExp();
 			if (VarInInit)
-			{ //ȫ�ֱ�����ʼ�������ñ���
+			{ //全局变量初始化不能用变量
 				throw "Error";
 			}
 		}
@@ -1102,6 +1104,7 @@ int VarDef()
 		struct VarItem *tempVarItem = (struct VarItem *)malloc(sizeof(struct VarItem));
 		tempVarItem->isConst = false;
 		tempVarItem->registerNum = ++VarMapSt;
+		tempVarItem->dimension = 0;
 		string tempName = symNow.name;
 
 		int tempDimesion = 0;
@@ -1117,7 +1120,7 @@ int VarDef()
 			symNow = sym[symst++];
 			if (symNow.type != 73)
 			{
-				printf("error in ConstDef ���� ]");
+				printf("error in ConstDef 数组 ]");
 				throw "Error";
 			}
 			if (sym[symst].type == 72)
@@ -1126,7 +1129,7 @@ int VarDef()
 			}
 		}
 
-		if (tempDimesion != 0) //������
+		if (tempDimesion != 0) //是数组
 		{
 			tempVarItem->dimension = tempDimesion;
 			int arraySize = 1;
@@ -1136,7 +1139,7 @@ int VarDef()
 			}
 			tempVarItem->arraySize = arraySize;
 			BVarMap[tempName] = *tempVarItem;
-			arrayDecl = tempVarItem; //�ѵ�ǰ�����������Ϣ����InitVal��
+			arrayDecl = tempVarItem; //把当前的数组变量信息留到InitVal用
 			if (tempDimesion == 0)
 				fprintf(fpout, "    %%x%d = alloca i32\n", VarMapSt);
 			else
@@ -1162,7 +1165,7 @@ int VarDef()
 			// 	return ret;
 		}
 		else
-		{ //��������
+		{ //不是数组
 			BVarMap[symNow.name] = *tempVarItem;
 
 			fprintf(fpout, "    %%x%d = alloca i32\n", VarMapSt);
@@ -1226,6 +1229,7 @@ int VarDef()
 		tempVarItem->isConst = false;
 		tempVarItem->registerNum = ++GVarMapst;
 		tempVarItem->globalNum = 0;
+		tempVarItem->dimension = 0;
 		string tempName = symNow.name;
 		int tempDimesion = 0;
 		if (sym[symst].type == 72)
@@ -1240,7 +1244,7 @@ int VarDef()
 			symNow = sym[symst++];
 			if (symNow.type != 73)
 			{
-				printf("error in ConstDef ���� ]");
+				printf("error in ConstDef 数组 ]");
 				throw "Error";
 			}
 			if (sym[symst].type == 72)
@@ -1248,7 +1252,7 @@ int VarDef()
 				symNow = sym[symst++];
 			}
 		}
-		if (tempDimesion != 0) //������
+		if (tempDimesion != 0) //是数组
 		{
 			tempVarItem->dimension = tempDimesion;
 			int arraySize = 1;
@@ -1258,7 +1262,7 @@ int VarDef()
 			}
 			tempVarItem->arraySize = arraySize;
 			GVarMap[tempName] = *tempVarItem;
-			arrayDecl = tempVarItem; //�ѵ�ǰ�����������Ϣ����InitVal��
+			arrayDecl = tempVarItem; //把当前的数组变量信息留到InitVal用
 			if (sym[symst].type == 54 || sym[symst].type == 53)
 			{
 				fprintf(fpout, "@x%d = dso_local global [%d x i32] zeroinitializer\n", GVarMapst, arraySize);
@@ -1276,7 +1280,7 @@ int VarDef()
 			arrayDef = true;
 			memset(tempArr, 0, 1000*sizeof(int));
 			if(arraySize>=950){
-				printf("tempArr���鿪С��");
+				printf("tempArr数组开小了");
 			}
 			ret = InitVal();
 			fprintf(fpout, "@x%d = dso_local global [%d x i32] [",GVarMapst, arraySize);
@@ -1286,9 +1290,9 @@ int VarDef()
 			fprintf(fpout,"i32 %d]\n",tempArr[arraySize-1]);
 		}
 		else
-		{ //��������
+		{ //不是数组
 			if (sym[symst].type == 54 || sym[symst].type == 53)
-			{ //û�г�ʼ��
+			{ //没有初始化
 				GVarMap[tempName] = *tempVarItem;
 				fprintf(fpout, "@x%d = dso_local global i32 %d\n", GVarMapst, tempVarItem->globalNum);
 				return 0;
@@ -1321,7 +1325,7 @@ int InitVal()
 		if (arrayDef)
 		{
 			if (symNow.type == 57)
-			{ //������  �����ʼ��
+			{ //花括号  数组初始化
 				symNow = sym[symst++];
 				baseNum++;
 				if (symNow.type == 58)
@@ -1337,7 +1341,7 @@ int InitVal()
 					}
 					int savedIndex = Offset;
 					while (symNow.type == 53)
-					{ //ͬһ���������ڣ���������һλ
+					{ //同一个花括号内，逗号右移一位
 						symNow = sym[symst++];
 						int temp = 1;
 						for (int i = arrayDecl->dimension - 1; i >= baseNum; i--)
@@ -1354,7 +1358,7 @@ int InitVal()
 					symNow = sym[symst++];
 					if (symNow.type != 58)
 					{
-						printf("error in InitVal ���� }");
+						printf("error in InitVal 数组 }");
 						throw "Error";
 					}
 					Offset = savedIndex;
@@ -1379,7 +1383,7 @@ int InitVal()
 					}
 					else
 					{
-						printf("error in InitVal ����");
+						printf("error in InitVal 数组");
 						throw "Error";
 						return ret;
 					}
@@ -1389,7 +1393,7 @@ int InitVal()
 			}
 		}
 		else
-		{ //��������
+		{ //不是数组
 			int tempAns = Exp();
 			return 0;
 		}
@@ -1415,7 +1419,7 @@ int InitVal()
 					}
 					int savedIndex = Offset;
 					while (symNow.type == 53)
-					{ //ͬһ���������ڣ���������һλ
+					{ //同一个花括号内，逗号右移一位
 						symNow = sym[symst++];
 						int temp = 1;
 						for (int i = arrayDecl->dimension - 1; i >= baseNum; i--)
@@ -1432,7 +1436,7 @@ int InitVal()
 					symNow = sym[symst++];
 					if (symNow.type != 58)
 					{
-						printf("error in InitVal Global���� }");
+						printf("error in InitVal Global数组 }");
 						throw "Error";
 					}
 					Offset = savedIndex;
@@ -1444,8 +1448,8 @@ int InitVal()
 				int tempVarSt = VarMapSt;
 				int tempAns = GlobalAddExp();
 				if (VarInInit)
-				{ //ȫ�ֱ�����ʼ�������ñ���
-					printf("ȫ�ֱ�����ʼ�������ñ���");
+				{ //全局变量初始化不能用变量
+					printf("全局变量初始化不能用变量");
 					throw "Error";
 				}
 				tempArr[Offset] = tempAns;
@@ -1457,7 +1461,7 @@ int InitVal()
 			VarInInit = false;
 			int result = GlobalAddExp();
 			if (VarInInit)
-			{ //ȫ�ֱ�����ʼ�������ñ���
+			{ //全局变量初始化不能用变量
 				throw "Error";
 			}
 			return result;
@@ -1505,7 +1509,7 @@ int FuncType()
 	return 0;
 }
 int Ident()
-{ //ֻ����FuncDef
+{ //只用于FuncDef
 	if (symNow.type == 2)
 	{
 		fprintf(fpout, "@main");
@@ -1675,7 +1679,7 @@ int Stmt()
 		return 0;
 	}
 	else if (symNow.type == 5)
-	{ //�������
+	{ //条件语句
 		symNow = sym[symst++];
 		if (symNow.type != 55)
 		{
@@ -1740,7 +1744,7 @@ int Stmt()
 		return 0;
 	}
 	else if (symNow.type == 7)
-	{ //ѭ��
+	{ //循环
 		symNow = sym[symst++];
 		if (symNow.type != 55)
 		{
@@ -1857,7 +1861,7 @@ int AddExp()
 	// if (ret != 0)
 	// 	return ret;
 	if (sym[symst].type == 59 || sym[symst].type == 62)
-	{ //������һ���ʣ��ж��Ƿ���ȷ
+	{ //读后面一个词，判断是否正确
 		symNow = sym[symst++];
 	}
 	while (symNow.type == 59 || symNow.type == 62)
@@ -1868,14 +1872,14 @@ int AddExp()
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 2;
-			tempExpStack->value = 1; //�Ǽӷ�
+			tempExpStack->value = 1; //是加法
 			ExpStack.push(*tempExpStack);
 		}
 		else
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 2;
-			tempExpStack->value = 2; //�Ǽ���
+			tempExpStack->value = 2; //是减法
 			ExpStack.push(*tempExpStack);
 		}
 		ret = MulExp();
@@ -1883,7 +1887,7 @@ int AddExp()
 			return ret;
 		Operation();
 		if (sym[symst].type == 59 || sym[symst].type == 62)
-		{ //������һ���ʣ��ж��Ƿ���ȷ
+		{ //读后面一个词，判断是否正确
 			symNow = sym[symst++];
 		}
 	}
@@ -1897,7 +1901,7 @@ int MulExp()
 	if (ret != 0)
 		return ret;
 	if (sym[symst].type == 60 || sym[symst].type == 61 || sym[symst].type == 63)
-	{ //������һ���ʣ��ж��Ƿ���ȷ
+	{ //读后面一个词，判断是否正确
 		symNow = sym[symst++];
 	}
 	while (symNow.type == 60 || symNow.type == 61 || symNow.type == 63)
@@ -1908,21 +1912,21 @@ int MulExp()
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 2;
-			tempExpStack->value = 3; //�ǳ˷�
+			tempExpStack->value = 3; //是乘法
 			ExpStack.push(*tempExpStack);
 		}
 		else if (tempSym.type == 61)
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 2;
-			tempExpStack->value = 4; //�ǳ���
+			tempExpStack->value = 4; //是除法
 			ExpStack.push(*tempExpStack);
 		}
 		else
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 2;
-			tempExpStack->value = 5; //��ȡ��
+			tempExpStack->value = 5; //是取余
 			ExpStack.push(*tempExpStack);
 		}
 		RetNum = UnaryExp();
@@ -1930,7 +1934,7 @@ int MulExp()
 			return ret;
 		Operation();
 		if (sym[symst].type == 60 || sym[symst].type == 61 || sym[symst].type == 63)
-		{ //������һ���ʣ��ж��Ƿ���ȷ
+		{ //读后面一个词，判断是否正确
 			symNow = sym[symst++];
 		}
 	}
@@ -1970,24 +1974,24 @@ void UnaryOp()
 	if (symNow.type == 59 || symNow.type == 62 || symNow.type == 71)
 	{
 		if (symNow.type == 59)
-		{ //����һ��+-�ţ����Դ����ж�Number������
+		{ //多余一个+-号，则以此来判断Number的正负
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 4;
-			tempExpStack->value = 1; //������
+			tempExpStack->value = 1; //是正号
 			ExpStack.push(*tempExpStack);
 		}
 		else if (symNow.type == 62)
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 4;
-			tempExpStack->value = 2; //�Ǹ���
+			tempExpStack->value = 2; //是负号
 			ExpStack.push(*tempExpStack);
 		}
 		else
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 4;
-			tempExpStack->value = 3; //��Not,����
+			tempExpStack->value = 3; //是Not,即！
 			ExpStack.push(*tempExpStack);
 		}
 	}
@@ -2047,7 +2051,7 @@ int PrimaryExp()
 }
 int LVal()
 {
-	//����Ƿ����Ѿ�����ı���,�����ڵ�ǰ��BVarMap��
+	//检查是否是已经定义的变量,现在在当前的BVarMap找
 	bool declared = false;
 	varIt = BVarMap.find(symNow.name);
 	if (varIt != BVarMap.end())
@@ -2055,11 +2059,11 @@ int LVal()
 		declared = true;
 	}
 
-	//�Ҳ����ˣ����ⲿ��Map
+	//找不到了，找外部的Map
 	for (VarMapListIt = VarMapList.rbegin(); VarMapListIt != VarMapList.rend(); ++VarMapListIt)
 	{
 		if (declared)
-		{ //��BVarMap�Ѿ��ҵ���
+		{ //在BVarMap已经找到了
 			break;
 		}
 		varIt = (*VarMapListIt).find(symNow.name);
@@ -2073,7 +2077,7 @@ int LVal()
 		}
 	}
 	if (!declared)
-	{ //����û�ҵ�����ȫ�ֱ�����
+	{ //还是没找到，在全局变量找
 		varIt = GVarMap.find(symNow.name);
 		if (varIt != GVarMap.end())
 		{
@@ -2093,10 +2097,10 @@ int LVal()
 		isArray = true;
 	}
 	int tempDimension = (*varIt).second.dimension;
-	int base = 0;	   //������
-	int tempindex = 0; //ƫ����
-	int temp = 1;	   //ƫ�ƻ���
-	int bracketCheck = 0;  //���ά���Ƿ���ȷ
+	int base = 0;	   //括号数
+	int tempindex = 0; //偏移数
+	int temp = 1;	   //偏移基数
+	int bracketCheck = 0;  //检测维数是否正确
 	fprintf(fpout,"    %%x%d = alloca i32\n",++VarMapSt);
 	fprintf(fpout,"    store i32 0, i32* %%x%d\n",VarMapSt);
 	fprintf(fpout,"    %%x%d = load i32, i32* %%x%d\n",++VarMapSt,VarMapSt);
@@ -2106,7 +2110,9 @@ int LVal()
 		base++;
 		bracketCheck++;
 		temp = 1;
+		map<string, struct VarItem>::iterator savedVarIt = varIt;
 		int result = Exp();
+		varIt = savedVarIt;
 		tempExpStack = &ExpStack.top();
 		//fprintf(fpout,"Lval Exp here\n");
 		for (int i = tempDimension - 1; i >= base; i--)
@@ -2146,14 +2152,14 @@ int LVal()
 		ExpStack.pop();
 	}
 	if(bracketCheck != (*varIt).second.dimension){
-		printf("Lval�����ά������");
+		printf("Lval数组的维数错误");
 		throw "Error";
 	}
 	if ((*varIt).second.isConst)
-	{ //��������ǳ���
+	{ //这个变量是常量
 		LvalIsConst = true;
 	}
-	else //����������ǳ�����������ڳ����ĳ�ʼ��ʽ���У���Ƿ���
+	else //这个变量不是常量，如果它在常量的初始化式子中，则非法。
 	{
 		VarInInit = true;
 	}
@@ -2163,18 +2169,18 @@ int LVal()
 		if(!IsGlobalVal)
 			fprintf(fpout, "    %%x%d = getelementptr [%d x i32], [%d x i32]* %%x%d, i32 0, i32 %%x%d\n", ++VarMapSt, (*varIt).second.arraySize, (*varIt).second.arraySize, (*varIt).second.registerNum, VarMapSt);
 		else fprintf(fpout, "    %%x%d = getelementptr [%d x i32], [%d x i32]* @x%d, i32 0, i32 %%x%d\n", ++VarMapSt, (*varIt).second.arraySize, (*varIt).second.arraySize, (*varIt).second.registerNum, VarMapSt);
-		IsGlobalVal = false;  //��ֹload��ʱ��ʹ��ȫ�ֱ��������
+		IsGlobalVal = false;  //防止load的时候使用全局变量的输出
 		return VarMapSt;
 	}
 	// if ((*varIt).second.isConst)
-	// { //��������ǳ���
+	// { //这个变量是常量
 	// 	LvalIsConst = true;
 	// }
-	// else //����������ǳ�����������ڳ����ĳ�ʼ��ʽ���У���Ƿ���
+	// else //这个变量不是常量，如果它在常量的初始化式子中，则非法。
 	// {
 	// 	VarInInit = true;
 	// }
-	return (*varIt).second.registerNum; //���ؼĴ�������
+	return (*varIt).second.registerNum; //返回寄存器数字
 }
 void Cond()
 {
@@ -2223,7 +2229,7 @@ void LOrExp()
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 2;
-			tempExpStack->value = 7; //��||
+			tempExpStack->value = 7; //是||
 			ExpStack.push(*tempExpStack);
 		}
 		LAndExp();
@@ -2259,7 +2265,7 @@ void LAndExp()
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 2;
-			tempExpStack->value = 6; //��&&
+			tempExpStack->value = 6; //是&&
 			ExpStack.push(*tempExpStack);
 		}
 		EqExp();
@@ -2292,14 +2298,14 @@ void EqExp()
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 5;
-			tempExpStack->value = 1; //�����
+			tempExpStack->value = 1; //是相等
 			ExpStack.push(*tempExpStack);
 		}
 		else
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 5;
-			tempExpStack->value = 2; //�ǲ����
+			tempExpStack->value = 2; //是不相等
 			ExpStack.push(*tempExpStack);
 		}
 		EqExp();
@@ -2322,28 +2328,28 @@ void RelExp()
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 5;
-			tempExpStack->value = 3; //��С��
+			tempExpStack->value = 3; //是小于
 			ExpStack.push(*tempExpStack);
 		}
 		else if (tempSym.type == 65)
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 5;
-			tempExpStack->value = 4; //�Ǵ���
+			tempExpStack->value = 4; //是大于
 			ExpStack.push(*tempExpStack);
 		}
 		else if (tempSym.type == 69)
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 5;
-			tempExpStack->value = 5; //��С�ڵ���
+			tempExpStack->value = 5; //是小于等于
 			ExpStack.push(*tempExpStack);
 		}
 		else
 		{
 			tempExpStack = (struct ExpElem *)malloc(sizeof(struct ExpElem));
 			tempExpStack->type = 5;
-			tempExpStack->value = 6; //�Ǵ��ڵ���
+			tempExpStack->value = 6; //是大于等于
 			ExpStack.push(*tempExpStack);
 		}
 		AddExp();
@@ -2532,7 +2538,7 @@ void OperationUnaryOp()
 	struct ExpElem op = ExpStack.top();
 	ExpStack.pop();
 
-	//�Ѿ��������ļӼ�����
+	//已经到正常的加减法了
 	if (op.type != 4)
 	{
 		ExpStack.push(op);
@@ -2653,7 +2659,7 @@ int GlobalAddExp()
 {
 	int RetNum = GlobalMulExp();
 	if (sym[symst].type == 59 || sym[symst].type == 62)
-	{ //������һ���ʣ��ж��Ƿ���ȷ
+	{ //读后面一个词，判断是否正确
 		symNow = sym[symst++];
 	}
 	while (symNow.type == 59 || symNow.type == 62)
@@ -2669,7 +2675,7 @@ int GlobalAddExp()
 			RetNum -= GlobalMulExp();
 		}
 		if (sym[symst].type == 59 || sym[symst].type == 62)
-		{ //������һ���ʣ��ж��Ƿ���ȷ
+		{ //读后面一个词，判断是否正确
 			symNow = sym[symst++];
 		}
 	}
@@ -2679,7 +2685,7 @@ int GlobalMulExp()
 {
 	int RetNum = GlobalUnaryExp();
 	if (sym[symst].type == 60 || sym[symst].type == 61 || sym[symst].type == 63)
-	{ //������һ���ʣ��ж��Ƿ���ȷ
+	{ //读后面一个词，判断是否正确
 		symNow = sym[symst++];
 	}
 	while (symNow.type == 60 || symNow.type == 61 || symNow.type == 63)
@@ -2699,7 +2705,7 @@ int GlobalMulExp()
 			RetNum %= GlobalUnaryExp();
 		}
 		if (sym[symst].type == 60 || sym[symst].type == 61 || sym[symst].type == 63)
-		{ //������һ���ʣ��ж��Ƿ���ȷ
+		{ //读后面一个词，判断是否正确
 			symNow = sym[symst++];
 		}
 	}
@@ -2713,7 +2719,7 @@ int GlobalUnaryExp()
 	{
 		int PositiveNum = 1;
 		if (symNow.type == 59)
-		{ //����һ��+-�ţ����Դ����ж�Number������
+		{ //多余一个+-号，则以此来判断Number的正负
 			PositiveNum = PositiveNum;
 		}
 		else
@@ -2767,7 +2773,7 @@ int GlobalPrimaryExp()
 			throw "Error";
 		}
 		if ((*varIt).second.isConst)
-		{ //��������ǳ���
+		{ //这个变量是常量
 			LvalIsConst = true;
 		}
 		else

@@ -219,7 +219,6 @@ int getToken()
 	while (fgets(str, 3000, fpin) != NULL)
 	{
 		memset(token, 0, sizeof(token));
-		printf("%s",str);
 		int iskey = 0;
 		sst = 0;
 		while (sst < strlen(str))
@@ -1516,6 +1515,8 @@ int InitVal()
 int FuncDef()
 {
 	tempFuncItem = new FuncItem;
+	VarMapList.clear();
+	BVarMap.clear();
 	fprintf(fpout, "define dso_local ");
 	ret = FuncType();   //仅检测语法是否合理
 	if(symNow.type == 1){
@@ -1603,16 +1604,16 @@ void FuncFparam(){
 	}
 	symNow = sym[symst++];
 	if(symNow.type !=22){
-		printf("error in FuncFparam Ident");
+		printf("error in FuncFparam Ident %s",symNow.name.c_str());
 	}
 	if (BVarMap.count(symNow.name) == 1)
 	{
-			printf("error in FuncFparam Ident");
-			throw "Error";
+		printf("error in FuncFparam Ident %s", symNow.name.c_str());
+		throw "Error";
 	}
 	if (symNow.name == tempFuncItem->tfuncName)
 	{
-			printf("error in FuncFparam Ident");
+			printf("error in FuncFparam Ident %s",symNow.name.c_str());
 			throw "Error";
 	}
 	struct VarItem *tempVarItem = (struct VarItem *)malloc(sizeof(struct VarItem));
@@ -2238,7 +2239,7 @@ int PrimaryExp()
 		tempExpStack->type = 3;
 		tempExpStack->value = ++VarMapSt;
 		ExpStack.push(*tempExpStack);
-		if (IsGlobalVal)
+		if (IsGlobalVal&&LvalRegister>=10000)
 		{
 			fprintf(fpout, "    %%x%d = load i32, i32* @x%d\n", tempExpStack->value, LvalRegister);
 		}
@@ -2412,24 +2413,42 @@ int LVal()
 	{
 		if(varIsParam){
 			fprintf(fpout, "    %%x%d = alloca i32*\n", ++VarMapSt);
-			fprintf(fpout, "    store i32*  %%x%d, i32* * %%x%d\n", (*varIt).second.registerNum, VarMapSt);
-			fprintf(fpout, "    %%x%d = load i32* , i32* * %%x%d\n", ++VarMapSt, VarMapSt);
-			fprintf(fpout, "    %%x%d = getelementptr i32, i32* %%x%d, i32 %%x%d\n", ++VarMapSt, VarMapSt, VarMapSt-2);
+			if((*varIt).second.registerNum<9999){
+				fprintf(fpout, "    store i32*  %%x%d, i32* * %%x%d\n", (*varIt).second.registerNum, VarMapSt);
+				fprintf(fpout, "    %%x%d = load i32* , i32* * %%x%d\n", ++VarMapSt, VarMapSt);
+				fprintf(fpout, "    %%x%d = getelementptr i32, i32* %%x%d, i32 %%x%d\n", ++VarMapSt, VarMapSt, VarMapSt-2);
+			}
+			else{
+				fprintf(fpout, "    %%x%d = load i32, i32* @x%d\n", ++VarMapSt, (*varIt).second.registerNum);
+				fprintf(fpout, "    store i32*  %%x%d, i32* * %%x%d\n", VarMapSt, VarMapSt-1);
+				fprintf(fpout, "    %%x%d = load i32* , i32* * %%x%d\n", ++VarMapSt, VarMapSt-1);
+				fprintf(fpout, "    %%x%d = getelementptr i32, i32* %%x%d, i32 %%x%d\n", ++VarMapSt, VarMapSt-1, VarMapSt-3);
+			}
+			varIsParam = savedVarIsParam;
+			IsGlobalVal = false;  //防止load的时候使用全局变量的输出
+			return VarMapSt;
 		}
 		else{
 			if((*varIt).second.registerNum<=9999)
 			fprintf(fpout, "    %%x%d = getelementptr [%d x i32], [%d x i32]* %%x%d, i32 0, i32 %%x%d\n", ++VarMapSt, (*varIt).second.arraySize, (*varIt).second.arraySize, (*varIt).second.registerNum, VarMapSt);
 			else fprintf(fpout, "    %%x%d = getelementptr [%d x i32], [%d x i32]* @x%d, i32 0, i32 %%x%d\n", ++VarMapSt, (*varIt).second.arraySize, (*varIt).second.arraySize, (*varIt).second.registerNum, VarMapSt);
+			varIsParam = savedVarIsParam;
+			IsGlobalVal = false;  //防止load的时候使用全局变量的输出
+			return VarMapSt;
 		}
-		varIsParam = savedVarIsParam;
-		IsGlobalVal = false;  //防止load的时候使用全局变量的输出
-		return VarMapSt;
 	}
 	else if(varIsParam){   //对于是参数int型的特殊存储
 		varIsParam = savedVarIsParam;
 		fprintf(fpout,"    %%x%d = alloca i32\n", ++VarMapSt);
-		fprintf(fpout,"    store i32 %%x%d, i32* %%x%d\n", (*varIt).second.registerNum, VarMapSt);
-		return VarMapSt;
+		if((*varIt).second.registerNum<9999){
+			fprintf(fpout,"    store i32 %%x%d, i32* %%x%d\n", (*varIt).second.registerNum, VarMapSt);
+			return VarMapSt;
+		}
+		else{
+			fprintf(fpout, "    %%x%d = load i32, i32* @x%d\n", ++VarMapSt, (*varIt).second.registerNum);
+			fprintf(fpout,"    store i32 %%x%d, i32* %%x%d\n", VarMapSt, VarMapSt-1);
+			return VarMapSt-1;
+		}
 	}
 	varIsParam = savedVarIsParam;
 	// if ((*varIt).second.isConst)

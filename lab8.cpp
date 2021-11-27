@@ -1562,9 +1562,13 @@ int FuncDef()
 	symNow = sym[symst++];
 	funcHasRet = false;
 	FuncMap[tempFuncItem->tfuncName] = *tempFuncItem;
+	int tempRetType = tempFuncItem->RetType;
 	ret = Block();
 	if(!funcHasRet){
-		fprintf(fpout, "    ret void\n");
+		if(tempRetType == 0)
+			fprintf(fpout, "    ret void\n");
+		else 
+			fprintf(fpout, "    ret i32 0\n");
 	}
 	fprintf(fpout, "}\n");
 	// if (ret != 0)
@@ -1951,6 +1955,7 @@ int Stmt()
 			fprintf(fpout, "    br label %%m_%d\n\n", mainCount);
 		}
 		fprintf(fpout, "m_%d:\n", mainCount);
+		funcHasRet = false;
 		mainCount++;
 		return 0;
 	}
@@ -2004,6 +2009,7 @@ int Stmt()
 			fprintf(fpout, "    br label %%m_%d\n\n", mainCount);
 		}
 		fprintf(fpout, "m_%d:\n", mainCount);
+		funcHasRet = false;
 		mainCount++;
 		return 0;
 	}

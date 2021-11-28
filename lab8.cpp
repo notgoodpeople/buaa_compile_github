@@ -157,8 +157,8 @@ FILE *fpin;
 FILE *fpout;
 int main(int argc, char *argv[])
 {
-	fpout = fopen("out.txt", "w");
-	fpin = fopen("in.txt", "r");
+	fpout = fopen(argv[2], "w");
+	fpin = fopen(argv[1], "r");
 	if (fpin == NULL)
 	{
 		printf("fpin error");

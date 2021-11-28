@@ -157,8 +157,8 @@ FILE *fpin;
 FILE *fpout;
 int main(int argc, char *argv[])
 {
-	fpout = fopen(argv[2], "w");
-	fpin = fopen(argv[1], "r");
+	fpout = fopen("out.txt", "w");
+	fpin = fopen("in.txt", "r");
 	if (fpin == NULL)
 	{
 		printf("fpin error");
@@ -1959,28 +1959,42 @@ int Stmt()
 		Stmt();
 		fprintf(fpout, "    br label %%m_%d\n", mainCount);
 		fprintf(fpout, "\n");
+		int savedMainCount = 0;
 		if (sym[symst].type == 6)
 		{
 			symNow = sym[symst++];
-		}
-		if (symNow.type == 6)
-		{
+			if (symNow.type == 6)
+			{
 			symNow = sym[symst++];
 			//fprintf(fpout,"Stmt Else \n");
 			int tem = condCountFalseStack.top();
 			condCountFalseStack.pop();
 			fprintf(fpout, "f_%d:\n", tem);
+			savedMainCount = mainCount;
+			mainCount++;
 			Stmt();
-			fprintf(fpout, "    br label %%m_%d\n", mainCount);
+			fprintf(fpout, "    br label %%m_%d\n", savedMainCount);
 			fprintf(fpout, "\n");
+			}
 		}
-		if (!condCountTrueStack.empty())
-		{
-			int tem = condCountTrueStack.top();
-			condCountTrueStack.pop();
-			fprintf(fpout, "t_%d:\n", tem);
-			fprintf(fpout, "    br label %%m_%d\n", mainCount);
-		}
+		// else{       //当连续的无{} if语句，特殊判断，当做有else
+		// 	//fprintf(fpout,"Stmt Else \n");
+		// 	if (!condCountFalseStack.empty()){
+		// 		int tem = condCountFalseStack.top();
+		// 		condCountFalseStack.pop();
+		// 		fprintf(fpout, "f_%d:\n", tem);
+		// 		fprintf(fpout, "    br label %%m_%d\n", mainCount);
+		// 		fprintf(fpout, "\n");
+		// 	}
+		// }
+		
+		// if (!condCountTrueStack.empty())
+		// {
+		// 	int tem = condCountTrueStack.top();
+		// 	condCountTrueStack.pop();
+		// 	fprintf(fpout, "t_%d:\n", tem);
+		// 	fprintf(fpout, "    br label %%m_%d\n", mainCount);
+		// }
 		if (!condCountFalseStack.empty())
 		{
 			int tem = condCountFalseStack.top();
@@ -1988,7 +2002,10 @@ int Stmt()
 			fprintf(fpout, "f_%d:\n", tem);
 			fprintf(fpout, "    br label %%m_%d\n\n", mainCount);
 		}
-		fprintf(fpout, "m_%d:\n", mainCount);
+		if(savedMainCount!=0){
+			fprintf(fpout, "m_%d:\n", savedMainCount);
+		}
+		else fprintf(fpout, "m_%d:\n", mainCount);
 		funcHasRet = false;
 		mainCount++;
 		return 0;
@@ -2774,14 +2791,6 @@ void FuncCall()
 		tempExpStack->type = 3;
 		tempExpStack->value = ++VarMapSt;
 		fprintf(fpout, "    %%x%d = call i32 %s", tempExpStack->value, (*funcIt).second.funcName.c_str());
-		if((*funcIt).second.funcName == "@getch"){
-			fprintf(fpout, "()\n    call void @putch(i32 %%x%d)\n", tempExpStack->value, (*funcIt).second.funcName.c_str());
-			if ((*funcIt).second.RetType)
-			{
-			ExpStack.push(*tempExpStack);
-			}
-			return;
-		}
 	}
 	fprintf(fpout, "(");
 	stack<struct ExpElem> reverseExpStack;  //输出反了，所以额外定义这个tempExpStack以正确输出

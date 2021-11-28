@@ -2774,6 +2774,14 @@ void FuncCall()
 		tempExpStack->type = 3;
 		tempExpStack->value = ++VarMapSt;
 		fprintf(fpout, "    %%x%d = call i32 %s", tempExpStack->value, (*funcIt).second.funcName.c_str());
+		if((*funcIt).second.funcName == "@getch"){
+			fprintf(fpout, "()\n    call void @putch(i32 %%x%d)\n", tempExpStack->value, (*funcIt).second.funcName.c_str());
+			if ((*funcIt).second.RetType)
+			{
+			ExpStack.push(*tempExpStack);
+			}
+			return;
+		}
 	}
 	fprintf(fpout, "(");
 	stack<struct ExpElem> reverseExpStack;  //输出反了，所以额外定义这个tempExpStack以正确输出

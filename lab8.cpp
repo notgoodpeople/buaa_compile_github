@@ -66,7 +66,7 @@ struct VarItem
 int Offset = 0;								 //多维数组初始化时的偏移量
 int baseNum = 0;							 //多维数组偏移量计算中使用的，代表左花括号个数的值
 bool arrayDef = false;						 //在init时，判断调用init函数的是不是array
-int tempArr[1000];                           //在init全局数组时使用的临时数组。
+int tempArr[50000];                           //在init全局数组时使用的临时数组。
 map<string, struct VarItem>::iterator varIt; //Varmap变量迭代器
 map<string, struct VarItem> GVarMap;		 //全局变量的Map
 bool GlobalDef;								 //当值为true时，代表现在正在定义全局变量
@@ -110,6 +110,7 @@ bool varIsParam;  //在LVal中使用，表示这个变量是函数的参数
 int paramSt = 0; //在LVal中使用，用来定义当前的FuncRParam参数是哪个
 bool funcHasRet = false; //在funcDef中使用，表示当前定义的函数有没有显式返回值
 bool hasMain = false; //表示是否已经定义主函数
+bool isAssignExp;     //表示当前的Exp是=后面的
 map<string, struct FuncItem> FuncMap;
 map<string, struct FuncItem>::iterator funcIt; //Funcmap变量迭代器
 int LVal();
@@ -847,6 +848,7 @@ int ConstDef()
 		tempVarItem->registerNum = ++GVarMapst;
 		tempVarItem->globalNum = 0;
 		tempVarItem->dimension = 0;
+		tempVarItem->isParam = false;
 		string tempName = symNow.name;
 		int tempDimesion = 0;
 		if (sym[symst].type == 72)
@@ -984,7 +986,9 @@ int ConstInitVal()
 				fprintf(fpout, "    %%x%d = getelementptr [%d x i32], [%d x i32]* %%x%d, i32 0, i32 %d\n", ++VarMapSt, arrayDecl->arraySize, arrayDecl->arraySize, arrayDecl->registerNum, Offset);
 				int tempVarSt = VarMapSt;
 				VarInInit = false;
+				isAssignExp = true;
 				ConstExp();
+				isAssignExp = false;
 				if (VarInInit) //常量初始化不能用变量
 				{
 					throw "Error";
@@ -1014,7 +1018,9 @@ int ConstInitVal()
 		else
 		{ //ConstInitVal -> ConstExp
 			VarInInit = false;
+			isAssignExp = true;
 			return ConstExp();
+			isAssignExp = false;
 			if (VarInInit) //常量初始化不能用变量
 			{
 				throw "Error";
@@ -1069,7 +1075,9 @@ int ConstInitVal()
 			else{
 				VarInInit = false;
 				int tempVarSt = VarMapSt;
+				isAssignExp = true;
 				int tempAns = GlobalAddExp();
+				isAssignExp = false;
 				if (VarInInit)
 				{ //全局变量初始化不能用变量
 					printf("全局变量初始化不能用变量");
@@ -1082,7 +1090,9 @@ int ConstInitVal()
 		else
 		{
 			VarInInit = false;
+			isAssignExp = true;
 			return ConstExp();
+			isAssignExp = false;
 			if (VarInInit)
 			{ //全局变量初始化不能用变量
 				throw "Error";
@@ -1273,6 +1283,7 @@ int VarDef()
 		tempVarItem->registerNum = ++GVarMapst;
 		tempVarItem->globalNum = 0;
 		tempVarItem->dimension = 0;
+		tempVarItem->isParam = false;
 		string tempName = symNow.name;
 		int tempDimesion = 0;
 		if (sym[symst].type == 72)
@@ -1321,7 +1332,7 @@ int VarDef()
 			Offset = 0;
 			symNow = sym[symst++];
 			arrayDef = true;
-			memset(tempArr, 0, 1000*sizeof(int));
+			memset(tempArr, 0, 50000*sizeof(int));
 			if(arraySize>=950){
 				printf("tempArr数组开小了");
 			}
@@ -1412,7 +1423,9 @@ int InitVal()
 			{ //ConstInitVal -> ConstExp
 				fprintf(fpout, "    %%x%d = getelementptr [%d x i32], [%d x i32]* %%x%d, i32 0, i32 %d\n", ++VarMapSt, arrayDecl->arraySize, arrayDecl->arraySize, arrayDecl->registerNum, Offset);
 				int tempVarSt = VarMapSt;
+				isAssignExp = true;
 				int tempAns = Exp();
+				isAssignExp = false;
 				tempExpStack = &ExpStack.top();
 				if (arrayDecl->registerNum < 9999)
 				{
@@ -1437,7 +1450,9 @@ int InitVal()
 		}
 		else
 		{ //不是数组
+			isAssignExp = true;
 			int tempAns = Exp();
+			isAssignExp = false;
 			return 0;
 		}
 	}
@@ -1489,7 +1504,9 @@ int InitVal()
 			else{
 				VarInInit = false;
 				int tempVarSt = VarMapSt;
+				isAssignExp = true;
 				int tempAns = GlobalAddExp();
+				isAssignExp = false;
 				if (VarInInit)
 				{ //全局变量初始化不能用变量
 					printf("全局变量初始化不能用变量");
@@ -1502,7 +1519,9 @@ int InitVal()
 		else
 		{
 			VarInInit = false;
+			isAssignExp = true;
 			int result = GlobalAddExp();
+			isAssignExp = false;
 			if (VarInInit)
 			{ //全局变量初始化不能用变量
 				throw "Error";
@@ -1686,15 +1705,15 @@ int Ident()
 		varIt = GVarMap.find(symNow.name);
 		if (varIt != GVarMap.end())
 		{
-			//printf("funcName已经被变量使用");
-			//throw "Error";
+			printf("funcName = Idnet error");
+			throw "Error";
 		}
 
 		funcIt = FuncMap.find(symNow.name); 
 		if (funcIt != FuncMap.end())
 		{
-			//printf("funcName已经被函数使用");
-			//throw "Error";
+			printf("funcName = Ident error");
+			throw "Error";
 		}
 		return 0;
 	}
@@ -1849,7 +1868,9 @@ int Stmt()
 		}
 
 		symNow = sym[symst++];
+		isAssignExp = true;
 		int tempAns = Exp();
+		isAssignExp = false;
 		symNow = sym[symst++];
 		if (retRegister <= 9999)
 		{
@@ -2271,6 +2292,7 @@ int LVal()
 	//检查是否是已经定义的变量,现在在当前的BVarMap找
 	bool declared = false;
 	varIt = BVarMap.find(symNow.name);
+	string tempVarname = symNow.name;  //用于printf的错误信息中的变量名
 	if (varIt != BVarMap.end())
 	{
 		declared = true;
@@ -2390,7 +2412,7 @@ int LVal()
 	}
 	if(!varIsParam){
 		if(bracketCheck != (*varIt).second.dimension){
-			//printf("Lval数组的维数错误");
+			printf("Lval dimension error :%s %d ",tempVarname.c_str(),symst);
 			throw "Error";
 		}
 	}
@@ -2398,7 +2420,7 @@ int LVal()
 		if((*varIt).second.dimension != 0){
 			isArray = true;
 			if(bracketCheck + (*funcIt).second.paramsDimension[paramSt] != (*varIt).second.dimension){
-				//printf("Lval数组的维数错误");
+				printf("Lval dimension error VarIsParam :%s %d",tempVarname.c_str(),symst);
 				throw "Error";
 			}
 		}
@@ -2682,6 +2704,12 @@ void FuncCall()
 	{
 		printf("error in FuncCall");
 		throw "Error";
+	}
+	if(isAssignExp){
+		if((*funcIt).second.RetType == 0 ){
+			printf("error in RetType");
+			throw "Error";
+		}
 	}
 	symNow = sym[symst++];
 	if (symNow.type != 55)

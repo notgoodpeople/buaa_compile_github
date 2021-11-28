@@ -2789,6 +2789,7 @@ void FuncCall()
 		}
 		else{
 			fprintf(fpout, "i32* %%x%d", reverseExpStack.top().value-1);
+			reverseExpStack.pop();
 			continue;
 		}
 		if (reverseExpStack.top().type == 1)

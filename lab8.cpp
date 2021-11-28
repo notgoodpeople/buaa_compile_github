@@ -225,6 +225,7 @@ int getToken()
 		while (sst < strlen(str))
 		{
 			memset(token, 0, sizeof(token));
+			printf("%s",str);
 			iskey = 0;
 			char ch = str[sst];
 			if (isspace(ch))

@@ -2736,11 +2736,14 @@ void FuncCall()
 	// if (symNow.type != 55)
 	// {
 	int paramsNum = (*funcIt).second.paramsNum;
+	int tempParamSt;
 	paramSt = 0;
 	while (paramsNum > 0)
 	{
 		savedFuncIt = funcIt;
+		tempParamSt = paramSt;
 		FuncRParams();
+		paramSt = tempParamSt;
 		funcIt = savedFuncIt;
 		paramSt++;
 		paramsNum--;

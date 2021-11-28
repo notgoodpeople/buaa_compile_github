@@ -157,8 +157,8 @@ FILE *fpin;
 FILE *fpout;
 int main(int argc, char *argv[])
 {
-	fpout = fopen(argv[2], "w");
-	fpin = fopen(argv[1], "r");
+	fpout = fopen("out.txt", "w");
+	fpin = fopen("in.txt", "r");
 	if (fpin == NULL)
 	{
 		printf("fpin error");
@@ -1577,11 +1577,25 @@ int FuncDef()
 		printf("error in FuncDef ')'");
 		throw "Error";
 	}
-	fprintf(fpout, ") {");
+	fprintf(fpout, ") {\n");
 	symNow = sym[symst++];
 	funcHasRet = false;
 	FuncMap[tempFuncItem->tfuncName] = *tempFuncItem;
 	int tempRetType = tempFuncItem->RetType;
+	for(varIt = BVarMap.begin(); varIt != BVarMap.end(); varIt++){
+		if((*varIt).second.dimension == 0){
+			fprintf(fpout,"    %%x%d = alloca i32\n", ++VarMapSt);
+			if((*varIt).second.registerNum<9999){
+				fprintf(fpout,"    store i32 %%x%d, i32* %%x%d\n", (*varIt).second.registerNum, VarMapSt);
+				(*varIt).second.registerNum = VarMapSt;
+			}
+			else{
+				fprintf(fpout, "    %%x%d = load i32, i32* @x%d\n", ++VarMapSt, (*varIt).second.registerNum);
+				fprintf(fpout,"    store i32 %%x%d, i32* %%x%d\n", VarMapSt, VarMapSt-1);
+				(*varIt).second.registerNum = VarMapSt-1;
+			}
+		}
+	}
 	ret = Block();
 	if(!funcHasRet){
 		if(tempRetType == 0)
@@ -1731,7 +1745,6 @@ int Block()
 		printf("error in Block '{'");
 		throw "Error";
 	}
-	fprintf(fpout, "\n");
 	symNow = sym[symst++];
 	VarMapList.push_back(BVarMap);
 	BVarMap.clear();
@@ -2465,19 +2478,21 @@ int LVal()
 			return VarMapSt;
 		}
 	}
-	else if(varIsParam){   //对于是参数int型的特殊存储
-		varIsParam = savedVarIsParam;
-		fprintf(fpout,"    %%x%d = alloca i32\n", ++VarMapSt);
-		if((*varIt).second.registerNum<9999){
-			fprintf(fpout,"    store i32 %%x%d, i32* %%x%d\n", (*varIt).second.registerNum, VarMapSt);
-			return VarMapSt;
-		}
-		else{
-			fprintf(fpout, "    %%x%d = load i32, i32* @x%d\n", ++VarMapSt, (*varIt).second.registerNum);
-			fprintf(fpout,"    store i32 %%x%d, i32* %%x%d\n", VarMapSt, VarMapSt-1);
-			return VarMapSt-1;
-		}
-	}
+	// else if(varIsParam){   //对于是参数int型的特殊存储
+	// 	varIsParam = savedVarIsParam;
+	// 	fprintf(fpout,"    %%x%d = alloca i32\n", ++VarMapSt);
+	// 	if((*varIt).second.registerNum<9999){
+	// 		fprintf(fpout,"    store i32 %%x%d, i32* %%x%d\n", (*varIt).second.registerNum, VarMapSt);
+	// 		varIsParam = savedVarIsParam;
+	// 		return VarMapSt;
+	// 	}
+	// 	else{
+	// 		fprintf(fpout, "    %%x%d = load i32, i32* @x%d\n", ++VarMapSt, (*varIt).second.registerNum);
+	// 		fprintf(fpout,"    store i32 %%x%d, i32* %%x%d\n", VarMapSt, VarMapSt-1);
+	// 		varIsParam = savedVarIsParam;
+	// 		return VarMapSt-1;
+	// 	}
+	// }
 	varIsParam = savedVarIsParam;
 	// if ((*varIt).second.isConst)
 	// { //这个变量是常量

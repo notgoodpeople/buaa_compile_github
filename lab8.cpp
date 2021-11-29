@@ -67,6 +67,7 @@ int Offset = 0;								 //多维数组初始化时的偏移量
 int baseNum = 0;							 //多维数组偏移量计算中使用的，代表左花括号个数的值
 bool arrayDef = false;						 //在init时，判断调用init函数的是不是array
 int tempArr[50000];                           //在init全局数组时使用的临时数组。
+int indexBasic = 0;                              //在数据计算偏移量时，临时的一个变量，用来防止alloca过多导致的错误
 map<string, struct VarItem>::iterator varIt; //Varmap变量迭代器
 map<string, struct VarItem> GVarMap;		 //全局变量的Map
 bool GlobalDef;								 //当值为true时，代表现在正在定义全局变量
@@ -157,8 +158,8 @@ FILE *fpin;
 FILE *fpout;
 int main(int argc, char *argv[])
 {
-	fpout = fopen(argv[2], "w");
-	fpin = fopen(argv[1], "r");
+	fpout = fopen("out.txt", "w");
+	fpin = fopen("in.txt", "r");
 	if (fpin == NULL)
 	{
 		printf("fpin error");
@@ -220,7 +221,6 @@ int getToken()
 	while (fgets(str, 3000, fpin) != NULL)
 	{
 		memset(token, 0, sizeof(token));
-		printf("%s",str);
 		int iskey = 0;
 		sst = 0;
 		while (sst < strlen(str))
@@ -1600,6 +1600,8 @@ int FuncDef()
 			}
 		}
 	}
+	indexBasic = ++VarMapSt;
+	fprintf(fpout, "    %%x%d = alloca i32\n",indexBasic);
 	ret = Block();
 	if(!funcHasRet){
 		if(tempRetType == 0)
@@ -1607,6 +1609,7 @@ int FuncDef()
 		else 
 			fprintf(fpout, "    ret i32 0\n");
 	}
+	indexBasic = 0;
 	fprintf(fpout, "}\n");
 	// if (ret != 0)
 	// 	return ret;
@@ -2046,6 +2049,8 @@ int Stmt()
 		int tem = whileCountTrueStack.top();
 		whileCountTrueStack.pop();
 		fprintf(fpout, "t_%d:\n", tem);
+		int savedMainCount = mainCount;
+		mainCount++;
 		Stmt();
 		continueCountTrueStack.pop();
 		fprintf(fpout, "    br label %%c_%d\n", tempWhileCount);
@@ -2054,16 +2059,20 @@ int Stmt()
 			int tem = whileCountTrueStack.top();
 			whileCountTrueStack.pop();
 			fprintf(fpout, "t_%d:\n", tem);
-			fprintf(fpout, "    br label %%m_%d\n", mainCount);
+			fprintf(fpout, "    br label %%m_%d\n", savedMainCount);
 		}
 		if (!whileCountFalseStack.empty())
 		{
 			int tem = whileCountFalseStack.top();
 			whileCountFalseStack.pop();
 			fprintf(fpout, "f_%d:\n", tem);
-			fprintf(fpout, "    br label %%m_%d\n\n", mainCount);
+			fprintf(fpout, "    br label %%m_%d\n\n", savedMainCount);
 		}
-		fprintf(fpout, "m_%d:\n", mainCount);
+		if(savedMainCount!=0){
+			fprintf(fpout, "m_%d:\n", savedMainCount);
+		}
+		else
+			fprintf(fpout, "m_%d:\n", mainCount);
 		funcHasRet = false;
 		mainCount++;
 		return 0;
@@ -2389,9 +2398,16 @@ int LVal()
 		}
 	}
 	if(isArray){
-		fprintf(fpout,"    %%x%d = alloca i32\n",++VarMapSt);
-		fprintf(fpout,"    store i32 0, i32* %%x%d\n",VarMapSt);
-		fprintf(fpout,"    %%x%d = load i32, i32* %%x%d\n",++VarMapSt,VarMapSt);
+		if(indexBasic == 0 ){
+			fprintf(fpout,"    %%x%d = alloca i32\n",++VarMapSt);
+			indexBasic = VarMapSt;
+			fprintf(fpout,"    store i32 0, i32* %%x%d\n",VarMapSt);
+			fprintf(fpout,"    %%x%d = load i32, i32* %%x%d\n",++VarMapSt,VarMapSt);
+		}
+		else{
+			fprintf(fpout,"    store i32 0, i32* %%x%d\n",indexBasic);
+			fprintf(fpout,"    %%x%d = load i32, i32* %%x%d\n",++VarMapSt,indexBasic);
+		}
 	}
 	while (symNow.type == 72)
 	{

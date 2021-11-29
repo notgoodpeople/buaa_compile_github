@@ -788,6 +788,7 @@ int ConstDef()
 		}
 		else{            //不是数组
 			BVarMap[symNow.name] = *tempVarItem;
+			string tempname = symNow.name;
 			fprintf(fpout, "    %%x%d = alloca i32\n", VarMapSt);
 			symNow = sym[symst++];
 			if (symNow.type != 52)
@@ -797,45 +798,13 @@ int ConstDef()
 			}
 			symNow = sym[symst++];
 			arrayDef = false;
-			ret = ConstInitVal();
+			int resultNum = ConstInitVal();
+			tempVarItem->globalNum = resultNum;
+			BVarMap[tempname] = *tempVarItem;
 			// if (ret != 0)
 			// 	return ret;
-			tempExpStack = &ExpStack.top();
-			if (tempVarItem->registerNum < 9999)
-			{
-				if (tempExpStack->type == 1)
-				{
-					fprintf(fpout, "    store i32 %d, i32* %%x%d\n", tempExpStack->value, tempVarItem->registerNum);
-				}
-				else if (tempExpStack->type == 3)
-				{
-					fprintf(fpout, "    store i32 %%x%d, i32* %%x%d\n", tempExpStack->value, tempVarItem->registerNum);
-				}
-				else
-				{
-					printf("error in ConstDef()");
-					throw "Error";
-					return ret;
-				}
-			}
-			else if (tempVarItem->registerNum > 9999)
-			{
-				if (tempExpStack->type == 1)
-				{
-					fprintf(fpout, "    store i32 %d, i32* @x%d\n", tempExpStack->value, tempVarItem->registerNum);
-				}
-				else if (tempExpStack->type == 3)
-				{
-					fprintf(fpout, "    store i32 %%x%d, i32* @x%d\n", tempExpStack->value, tempVarItem->registerNum);
-				}
-				else
-				{
-					printf("error in ConstDef()");
-					throw "Error";
-					return ret;
-				}
-			}
-			ExpStack.pop();
+			fprintf(fpout,"    store i32 %d, i32* %%x%d\n",tempVarItem->globalNum,tempVarItem->registerNum);
+			return 0;
 		}
 	}
 	else if (symNow.type == 22 && GlobalDef == true)
@@ -1106,7 +1075,7 @@ int ConstInitVal()
 }
 int ConstExp()
 {
-	if (GlobalDef == false)
+	if ((GlobalDef == false) && arrayDef)
 		return AddExp();
 	else
 	{
@@ -2398,16 +2367,16 @@ int LVal()
 		}
 	}
 	if(isArray){
-		if(indexBasic == 0 ){
+		// if(indexBasic == 0 ){
 			fprintf(fpout,"    %%x%d = alloca i32\n",++VarMapSt);
 			indexBasic = VarMapSt;
 			fprintf(fpout,"    store i32 0, i32* %%x%d\n",VarMapSt);
 			fprintf(fpout,"    %%x%d = load i32, i32* %%x%d\n",++VarMapSt,VarMapSt);
-		}
-		else{
-			fprintf(fpout,"    store i32 0, i32* %%x%d\n",indexBasic);
-			fprintf(fpout,"    %%x%d = load i32, i32* %%x%d\n",++VarMapSt,indexBasic);
-		}
+		// }
+		// else{
+		// 	fprintf(fpout,"    store i32 0, i32* %%x%d\n",indexBasic);
+		// 	fprintf(fpout,"    %%x%d = load i32, i32* %%x%d\n",++VarMapSt,indexBasic);
+		// }
 	}
 	while (symNow.type == 72)
 	{

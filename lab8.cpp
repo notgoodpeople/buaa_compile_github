@@ -3163,13 +3163,41 @@ int GlobalPrimaryExp()
 	{ //ident
 		int retPriNum;
 		bool declared = false;
-		varIt = GVarMap.find(symNow.name);
-		if (varIt != GVarMap.end())
+		varIt = BVarMap.find(symNow.name);  //在BVarMap中找常量
+		if (varIt != BVarMap.end())
 		{
-			declared = true;
+			if((*varIt).second.isConst == true){
+				declared = true;
+			}
 		}
-		else
+		for (VarMapListIt = VarMapList.rbegin(); VarMapListIt != VarMapList.rend(); ++VarMapListIt)
 		{
+			if (declared)
+			{ //在BVarMap已经找到了
+				break;
+			}
+			varIt = (*VarMapListIt).find(symNow.name);
+			if (varIt != (*VarMapListIt).end())
+			{
+				if((*varIt).second.isConst == true){
+					declared = true;
+				}
+			}
+			else
+			{
+				continue;
+			}
+		}
+		if(!declared){
+			varIt = GVarMap.find(symNow.name);
+			if (varIt != GVarMap.end())
+			{
+				if((*varIt).second.isConst == true){
+					declared = true;
+				}
+			}
+		}
+		if(!declared){
 			printf("error in GlobalPrimaryExp() symNow.type == 22");
 			throw "Error";
 		}

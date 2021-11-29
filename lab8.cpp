@@ -220,7 +220,6 @@ int getToken()
 	while (fgets(str, 3000, fpin) != NULL)
 	{
 		memset(token, 0, sizeof(token));
-		printf("%s",str);
 		int iskey = 0;
 		sst = 0;
 		while (sst < strlen(str))
@@ -796,6 +795,7 @@ int ConstDef()
 				throw "Error";
 			}
 			symNow = sym[symst++];
+			arrayDef = false;
 			ret = ConstInitVal();
 			// if (ret != 0)
 			// 	return ret;
@@ -922,6 +922,7 @@ int ConstDef()
 				throw "Error";
 			}
 			symNow = sym[symst++];
+			arrayDef =false;
 			int resultNum = ConstInitVal();
 			tempVarItem->globalNum = resultNum;
 			GVarMap[tempName] = *tempVarItem;
@@ -1359,6 +1360,7 @@ int VarDef()
 				throw "Error";
 			}
 			symNow = sym[symst++];
+			arrayDef = false;
 			int resultNum = InitVal();
 			tempVarItem->globalNum = resultNum;
 			GVarMap[tempName] = *tempVarItem;

@@ -20,5 +20,5 @@ image = { source = "dockerfile", path = "." }
 # run 中的每一条命令的工作路径都是你在 dockerfile 中最后一次指定的工作路径。
 run = [
   # "cat $input | ./Token",
-  "./lab8 $input $ir"
+  "./lab9 $input $ir"
 ]

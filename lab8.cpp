@@ -2367,16 +2367,16 @@ int LVal()
 		}
 	}
 	if(isArray){
-		// if(indexBasic == 0 ){
+		if(indexBasic == 0 ){
 			fprintf(fpout,"    %%x%d = alloca i32\n",++VarMapSt);
 			indexBasic = VarMapSt;
 			fprintf(fpout,"    store i32 0, i32* %%x%d\n",VarMapSt);
 			fprintf(fpout,"    %%x%d = load i32, i32* %%x%d\n",++VarMapSt,VarMapSt);
-		// }
-		// else{
-		// 	fprintf(fpout,"    store i32 0, i32* %%x%d\n",indexBasic);
-		// 	fprintf(fpout,"    %%x%d = load i32, i32* %%x%d\n",++VarMapSt,indexBasic);
-		// }
+		}
+		else{
+			fprintf(fpout,"    store i32 0, i32* %%x%d\n",indexBasic);
+			fprintf(fpout,"    %%x%d = load i32, i32* %%x%d\n",++VarMapSt,indexBasic);
+		}
 	}
 	while (symNow.type == 72)
 	{

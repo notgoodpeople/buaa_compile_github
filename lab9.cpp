@@ -2518,10 +2518,12 @@ void Cond()
 void LOrExp()
 {
 	LAndExp();
-	fprintf(fpout, "    br i1 %%x%d, label %%t_%d, label %%Continue_%d\n\n", VarMapSt,condCount , ++condContinue);
-	fprintf(fpout, "Continue_%d:\n", condContinue);
-	if (sym[symst].type == 66)
+	
+	if (sym[symst].type == 66){
 		symNow = sym[symst++];
+		fprintf(fpout, "    br i1 %%x%d, label %%t_%d, label %%Continue_%d\n\n", VarMapSt,condCount , ++condContinue);
+		fprintf(fpout, "Continue_%d:\n", condContinue);
+	}
 	while (symNow.type == 66)
 	{
 		struct symType tempSym = symNow;
@@ -2585,10 +2587,12 @@ void LAndExp()
 		ExpStack.push(num);
 		tempExpStack = &ExpStack.top();
 	}
+	if (sym[symst].type == 67){
+		symNow = sym[symst++];
 		fprintf(fpout, "    br i1 %%x%d, label %%Continue_%d, label %%f_%d\n\n", VarMapSt, ++condContinue, (condCount + 1));
 		fprintf(fpout, "Continue_%d:\n", condContinue);
-	if (sym[symst].type == 67)
-		symNow = sym[symst++];
+	}
+		
 	while (symNow.type == 67)
 	{
 		struct symType tempSym = symNow;

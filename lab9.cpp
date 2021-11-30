@@ -2659,7 +2659,7 @@ void LAndExp()
 			ExpStack.push(num);
 			tempExpStack = &ExpStack.top();
 		}
-		Operation();
+		//Operation();
 		// int tem = condCountTrueStack.top();
 		// condCountTrueStack.pop();
 		// fprintf(fpout,"%d_t:\n", tem);

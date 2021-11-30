@@ -2535,7 +2535,7 @@ void LOrExp()
 	LAndExp();
 	
 	if (sym[symst].type == 66){
-		fprintf(fpout, "    br i1 %%x%d, label %%t_%d, label %%Continue_%d\n\n", VarMapSt,condCount , condContinue);
+		fprintf(fpout, "    br i1 %%x%d, label %%t_%d, label %%Continue_%d\n\n", VarMapSt,condCount , condContinue+1);
 		symNow = sym[symst++];
 		condContinue++;
 		if(!condContinueOrStack.empty()){

@@ -88,6 +88,9 @@ struct VarItem *arrayDecl;										  //对于数组的初始化，需要保留�
 int condCount = 1; //该是第几个cond块了
 bool condHasIcmp = false;
 int condContinue = 0;   //用来短路求值的计数器
+int condContinueOr = 0 ; //当短路求值&&后面有||时，&& false跳到||之后 的 代码块计数器
+stack<int> condContinueOrStack;             //存condContinueOr的栈
+stack<int> condContinueOrCondCountStack;    //存condContinueOr对应的False Block 的 栈
 //以下的栈是用来fprintf跳转label的栈
 stack<int> condCountFalseStack;
 stack<int> condCountTrueStack;
@@ -1916,6 +1919,12 @@ int Stmt()
 		Cond();
 		tempExpStack = &ExpStack.top();
 		fprintf(fpout, "    br i1 %%x%d, label %%t_%d, label %%f_%d\n\n", tempExpStack->value, condCount, (condCount + 1));
+		while(!condContinueOrStack.empty()){
+			fprintf(fpout,"ContinueOr_%d:\n",condContinueOrStack.top());
+			fprintf(fpout,"    br  label %%f_%d\n\n", condContinueOrCondCountStack.top());
+			condContinueOrStack.pop();
+			condContinueOrCondCountStack.pop();
+		}
 		condCountMap[true] = condCount;
 		condCountTrueStack.push(condCount);
 		condCountMap[false] = condCount + 1;
@@ -2004,6 +2013,12 @@ int Stmt()
 		Cond();
 		tempExpStack = &ExpStack.top();
 		fprintf(fpout, "    br i1 %%x%d, label %%t_%d, label %%f_%d\n\n", tempExpStack->value, condCount, (condCount + 1));
+		while(!condContinueOrStack.empty()){
+			fprintf(fpout,"ContinueOr_%d:\n",condContinueOrStack.top());
+			fprintf(fpout,"    br  label %%f_%d\n\n", condContinueOrCondCountStack.top());
+			condContinueOrStack.pop();
+			condContinueOrCondCountStack.pop();
+		}
 		condCountMap[true] = condCount;
 		whileCountTrueStack.push(condCount);
 		condCountMap[false] = condCount + 1;
@@ -2520,8 +2535,15 @@ void LOrExp()
 	LAndExp();
 	
 	if (sym[symst].type == 66){
+		fprintf(fpout, "    br i1 %%x%d, label %%t_%d, label %%Continue_%d\n\n", VarMapSt,condCount , condContinue);
 		symNow = sym[symst++];
-		fprintf(fpout, "    br i1 %%x%d, label %%t_%d, label %%Continue_%d\n\n", VarMapSt,condCount , ++condContinue);
+		condContinue++;
+		if(!condContinueOrStack.empty()){
+			fprintf(fpout,"ContinueOr_%d:\n",condContinueOrStack.top());
+			fprintf(fpout,"    br  label %%Continue_%d\n\n", condContinue);
+			condContinueOrStack.pop();
+			condContinueOrCondCountStack.pop();
+		}
 		fprintf(fpout, "Continue_%d:\n", condContinue);
 	}
 	while (symNow.type == 66)
@@ -2536,7 +2558,7 @@ void LOrExp()
 			ExpStack.push(*tempExpStack);
 		}
 		LAndExp();
-		Operation();
+		//Operation();
 		//fprintf(fpout,"block LOrd\n ");
 		// int tem = condCountFalseStack.top();
 		// condCountFalseStack.pop();
@@ -2589,6 +2611,10 @@ void LAndExp()
 	}
 	if (sym[symst].type == 67){
 		symNow = sym[symst++];
+		fprintf(fpout, "    br i1 %%x%d, label %%Continue_%d, label %%ContinueOr_%d\n\n", VarMapSt, ++condContinue, ++condContinueOr);
+		condContinueOrCondCountStack.push((condCount+1));
+		condContinueOrStack.push(condContinueOr);
+		fprintf(fpout, "Continue_%d:\n", condContinue);
 	}
 		
 	while (symNow.type == 67)
@@ -2646,12 +2672,8 @@ void LAndExp()
 		// 	fprintf(fpout,"%d_t:\n", tem2);
 		// 	fprintf(fpout,"    br label %%x%d_t\n",tem3);
 		// }
-		if (sym[symst].type == 67){
+		if (sym[symst].type == 67)
 			symNow = sym[symst++];
-			fprintf(fpout, "    br i1 %%x%d, label %%Continue_%d, label %%f_%d\n\n", VarMapSt, ++condContinue, (condCount + 1));
-			fprintf(fpout, "Continue_%d:\n", condContinue);
-		}
-			
 	}
 }
 void EqExp()

@@ -1573,8 +1573,7 @@ int FuncDef()
 			}
 		}
 	}
-	indexBasic = ++VarMapSt;
-	fprintf(fpout, "    %%x%d = alloca i32\n",indexBasic);
+	
 	ret = Block();
 	if(!funcHasRet){
 		if(tempRetType == 0)

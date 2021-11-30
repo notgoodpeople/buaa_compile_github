@@ -222,7 +222,6 @@ int getToken()
 	while (fgets(str, 3000, fpin) != NULL)
 	{
 		memset(token, 0, sizeof(token));
-		printf("%s",str);
 		int iskey = 0;
 		sst = 0;
 		while (sst < strlen(str))
@@ -2590,8 +2589,6 @@ void LAndExp()
 	}
 	if (sym[symst].type == 67){
 		symNow = sym[symst++];
-		fprintf(fpout, "    br i1 %%x%d, label %%Continue_%d, label %%f_%d\n\n", VarMapSt, ++condContinue, (condCount + 1));
-		fprintf(fpout, "Continue_%d:\n", condContinue);
 	}
 		
 	while (symNow.type == 67)
@@ -2649,8 +2646,12 @@ void LAndExp()
 		// 	fprintf(fpout,"%d_t:\n", tem2);
 		// 	fprintf(fpout,"    br label %%x%d_t\n",tem3);
 		// }
-		if (sym[symst].type == 67)
+		if (sym[symst].type == 67){
 			symNow = sym[symst++];
+			fprintf(fpout, "    br i1 %%x%d, label %%Continue_%d, label %%f_%d\n\n", VarMapSt, ++condContinue, (condCount + 1));
+			fprintf(fpout, "Continue_%d:\n", condContinue);
+		}
+			
 	}
 }
 void EqExp()

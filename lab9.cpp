@@ -91,12 +91,24 @@ int condContinue = 0;   //用来短路求值的计数器
 int condContinueOr = 0 ; //当短路求值&&后面有||时，&& false跳到||之后 的 代码块计数器
 stack<int> condContinueOrStack;             //存condContinueOr的栈
 stack<int> condContinueOrCondCountStack;    //存condContinueOr对应的False Block 的 栈
+
 //以下的栈是用来fprintf跳转label的栈
 stack<int> condCountFalseStack;
 stack<int> condCountTrueStack;
 stack<int> whileCountFalseStack;
 stack<int> whileCountTrueStack;
 stack<int> continueCountTrueStack;
+/*代码块的类型一共有5种：
+m_%d:    //是表示在条件变量之后，回到的代码块
+t_%d:    //表示条件变量的条件为true时，进入的代码块
+f_%d:    //表示条件变量的条件为false时，进入的代码块
+-------------------以上是在挑战实验之前的所有代码块类型-------------------------------
+当条件变量的条件为true时，不进入t_%d,而是先进入continue_%d，这个代码块一般是紧跟着的&&后面的条件
+continue_%d:  
+当条件变量的条件为false时，不进入f_%d,而是先进入continueOr_%d, 这个代码块一般是紧跟着的||后面的条件
+continueOr_%d:
+*/
+
 map<bool, int> condCountMap; //没有用到，用bool值来判断条件变量块的编号
 
 int mainCount = 1;		//准备从条件语句或者循环中，返回上一层，上一层的序号 m_{{maincount}}

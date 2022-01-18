@@ -228,9 +228,6 @@ int getToken()
 	while (fgets(str, 3000, fpin) != NULL)
 	{
 		memset(token, 0, sizeof(token));
-		if(strcmp(str,"int array[110];\n") == 0){
-			fprintf(fpout,"declare i32 @getint()\ndeclare i32 @getch()\ndeclare i32 @getarray(i32*)\ndeclare void @putint(i32)\ndeclare void @putch(i32)\ndeclare void @putarray(i32, i32*)\ndeclare void @memset(i32*, i32, i32)\n@x10001 = dso_local global [110 x i32] zeroinitializer\ndefine dso_local i32 @main() {\n    %%x1 = alloca i32\n    %%x2 = alloca i32\n    %%x3 = alloca i32\n    %%x4 = alloca i32\n    %%x5 = alloca i32\n    store i32 1, i32* %%x2\n    br label %%c_1\n\nc_1:\n   %%x6 = load i32, i32* %%x2\n    %%x7 = icmp ne i32 %%x6, 0\n    br i1 %%x7, label %%t_1, label %%f_2\n\nt_1:\n    %%x8 = load i32, i32* %%x2\n    %%x9 = sub i32 %%x8, 1\n    store i32 %%x9, i32* %%x2\n    %%x10 = alloca i32\n    store i32 0, i32* %%x10\n    store i32 10, i32* %%x3\n    br label %%c_2\n\nc_2:\n    %%x11 = load i32, i32* %%x10\n    %%x12 = load i32, i32* %%x3\n    %%x13 = icmp slt i32 %%x11, %%x12\n    br i1 %%x13, label %%t_3, label %%f_4\n\nt_3:\n    %%x14 = call i32 @getint()\n    store i32 %%x14, i32* %%x4\n    %%x15 = call i32 @getint()\n    store i32 %%x15, i32* %%x5\n    %%x16 = load i32, i32* %%x10\n    %%x17 = add i32 %%x16, 1\n    store i32 %%x17, i32* %%x10\n    br label %%c_2\nf_4:\n    br label %%m_2\n\nm_2:\n    call void @putint(i32 8)\n    br label %%c_1\nf_2:\n    br label %%m_1\n\nm_1:\n    ret i32 0\n}\n");return 1001;
-		}
 		int iskey = 0;
 		sst = 0;
 		while (sst < strlen(str))
